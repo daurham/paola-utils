@@ -129,6 +129,7 @@ const formatStudentsForCESPModuleCompletionSheet = (students) => students.map((s
       (techMentor) => getRepoCompletionSheetData(DOC_ID_PULSE, techMentor.repoCompletionSheetID),
     ),
   );
+  console.log(studentsFromRepoCompletion);
   const students = studentsFromRepoCompletion
     .flat()
     .filter((student) => student.fullName)
