@@ -124,11 +124,12 @@ const formatStudentsForCESPModuleCompletionSheet = (students) => students.map((s
 }));
 
 (async () => {
-  const students = (await Promise.all(
+  const studentsFromRepoCompletion = await Promise.all(
     techMentors.map(
       (techMentor) => getRepoCompletionSheetData(DOC_ID_PULSE, techMentor.repoCompletionSheetID),
     ),
-  ))
+  );
+  const students = studentsFromRepoCompletion
     .flat()
     .filter((student) => student.fullName)
     .sort(sortStudentsByFullName)
