@@ -414,6 +414,7 @@ const assignStudentsToPods = async (students) => {
       email: student.email,
       techMentor: pod.name,
       // VBAFundingType: student.VBAFundingType,
+      // TODO: Maybe handle setting these to the proper formulas?
       prepType: 'FILL_ME_IN',
       hadLaserCoaching: 'FILL_ME_IN',
       numPrecourseEnrollments: 'FILL_ME_IN',
@@ -442,10 +443,12 @@ const assignStudentsToPods = async (students) => {
 
 const addStudentsToRepoCompletionSheets = async (pods) => {
   const doc = await loadGoogleSpreadsheet(DOC_ID_PULSE);
-  const repoCompletionPromises = pods.map((pod) => {
-    const sheet = doc.sheetsById[pod.repoCompletionSheetID];
-    return sheet.addRows(pod.repoCompletionRowsToAdd);
-  });
+  const repoCompletionPromises = pods
+    .filter((pod) => pod.repoCompletionRowsToAdd.length > 0)
+    .map((pod) => {
+      const sheet = doc.sheetsById[pod.repoCompletionSheetID];
+      return sheet.addRows(pod.repoCompletionRowsToAdd);
+    });
   return Promise.all(repoCompletionPromises);
 };
 
@@ -476,17 +479,16 @@ const getNewStudents = async () => {
   console.info(eligibleNewStudents.length, 'new students');
   console.info(newStudents.length - eligibleNewStudents.length, 'students without their intake form completed');
 
-  if (newStudents.length - eligibleNewStudents.length > 0) {
-    console.info('Adding students to HRPTIV naughty list...');
-    await updateEnrollmentTrackingSheet(
-      newStudents.filter((student) => !hasIntakeFormCompleted(student)),
-      DOC_ID_HRPTIV,
-      SHEET_ID_HRPTIV_NAUGHTY_LIST,
-      true,
-      NAUGHTY_LIST_HEADERS,
-    );
-    // TODO: Send naughty list emails
-  }
+  console.info('Adding students to HRPTIV naughty list...');
+  await updateEnrollmentTrackingSheet(
+    newStudents.filter((student) => !hasIntakeFormCompleted(student)),
+    DOC_ID_HRPTIV,
+    SHEET_ID_HRPTIV_NAUGHTY_LIST,
+    true,
+    NAUGHTY_LIST_HEADERS,
+  );
+  // TODO: Send naughty list emails
+
   if (eligibleNewStudents.length > 0) {
     console.info('Adding students to HRPTIV roster...');
     await updateEnrollmentTrackingSheet(
