@@ -1,4 +1,9 @@
 /* eslint-disable no-console, quote-props */
+/**
+ * TODO:
+ *  - handle separated students
+ *  - remove or update the "CES&P is updated" box with date on the sheet
+ */
 require('dotenv').config();
 const {
   DOC_ID_CESP,
