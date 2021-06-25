@@ -7,6 +7,7 @@ module.exports = [{
   name: 'Dan',
   repoCompletionSheetID: '2038624772',
   repoCompletionSheetName: 'DR - Repo Completion',
+  podSizeRatio: 0.5,
 },
 {
   name: 'Eliza',

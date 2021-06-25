@@ -5,7 +5,7 @@ const { GITHUB_API_USERS, GITHUB_API_TEAMS } = require('../constants');
 // GitHub API Integrations
 // ------------------------------
 
-const headers = { Authorization: `token ${process.env.GITHUB_ACCESS_TOKEN}` };
+const headers = { Authorization: `token ${process.env.GIT_AUTH_TOKEN}` };
 
 // Validate a github username exists
 exports.validateUser = async (username) => {
@@ -17,6 +17,43 @@ exports.validateUser = async (username) => {
     return response.status === 200;
   } catch (error) {
     return error;
+  }
+};
+
+exports.createTeam = async (teamName) => {
+  try {
+    const data = {
+      name: teamName,
+      // privacy: 'secret',
+      privacy: 'closed',
+    };
+    const response = await fetch(
+      GITHUB_API_TEAMS,
+      { method: 'POST', headers, body: JSON.stringify(data) },
+    );
+    const res = await response.json();
+    if (res.errors) throw new Error(res.errors[0].message);
+    return response.status === 201;
+  } catch (error) {
+    return error.message;
+  }
+};
+
+exports.deleteTeam = async (teamName) => {
+  try {
+    const data = {
+      name: teamName,
+      // privacy: 'secret',
+    };
+    const response = await fetch(
+      GITHUB_API_TEAMS,
+      { method: 'DELETE', headers, body: JSON.stringify(data) },
+    );
+    const res = await response.json();
+    if (res.errors) throw new Error(res.errors[0].message);
+    return response.status === 200;
+  } catch (error) {
+    return error.message;
   }
 };
 
@@ -97,4 +134,17 @@ exports.removeUsersFromTeam = async (usernames, team) => {
   } catch (error) {
     return error.message;
   }
+};
+
+// Create Branch
+exports.createBranches = async (accountName, repoName, commitHash, branchNames) => {
+  const promises = branchNames.map(async (branchName) => {
+    const newBranch = await fetch(
+      `https://api.github.com/repos/${accountName}/${repoName}/git/refs`,
+      { method: 'POST', headers, body: JSON.stringify({ ref: `refs/heads/${branchName}`, sha: commitHash }) },
+    );
+    return newBranch.status;
+  });
+  const result = await Promise.all(promises);
+  return result.every((status) => status === 201);
 };

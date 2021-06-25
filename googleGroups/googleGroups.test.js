@@ -8,7 +8,7 @@ const {
 } = require('.');
 
 const scopes = ['https://www.googleapis.com/auth/admin.directory.group'];
-const jwt = new google.auth.JWT(process.env.GOOGLE_ADMIN_CLIENT_EMAIL, null, process.env.GOOGLE_ADMIN_CLIENT_KEY, scopes, 'paola@galvanize.com');
+const jwt = new google.auth.JWT(process.env.GOOGLE_GROUPS_CLIENT_EMAIL, null, process.env.GOOGLE_ADMIN_CLIENT_KEY, scopes, 'paola@galvanize.com');
 
 const GOOGLE_GROUP_ID = 'paola-sandbox@galvanize.com';
 const GOOGLE_GROUP_USER = 'paola@galvanize.com';
