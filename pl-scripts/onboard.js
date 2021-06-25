@@ -385,19 +385,21 @@ const processStudents = (fullTimeStudents, partTimeStudents) => {
   return fullTimeStudentsForSheet.concat(partTimeStudentsForSheet);
 };
 
+const weightedPodSize = (pod) => Math.ceil(pod.podSize / (pod.podSizeRatio || 1));
+
 const assignStudentsToPods = async (students) => {
   const podSizes = await Promise.all(
     techMentors.map((techMentor) => getRepoCompletionSheetRowCount(techMentor)),
   );
   const techMentorsWithPodSize = techMentors.map((techMentor, index) => ({
     ...techMentor,
-    podSize: Math.ceil(podSizes[index] / (techMentor.podSizeRatio || 1)),
+    podSize: podSizes[index],
     repoCompletionRowsToAdd: [],
   }));
 
   students.forEach((student) => {
     const pod = techMentorsWithPodSize.reduce((smallestPod, currentPod) => {
-      if (!smallestPod || smallestPod.podSize > currentPod.podSize) {
+      if (!smallestPod || weightedPodSize(smallestPod) > weightedPodSize(currentPod)) {
         return currentPod;
       }
       return smallestPod;
