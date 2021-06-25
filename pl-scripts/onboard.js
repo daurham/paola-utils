@@ -415,7 +415,9 @@ const assignStudentsToPods = async (students) => {
       techMentor: pod.name,
       // VBAFundingType: student.VBAFundingType,
       // TODO: Maybe handle setting these to the proper formulas?
-      prepType: 'FILL_ME_IN',
+      prepType: 'FILL_ME_IN', // student.selfReportedPrepartion,
+      // NB: for this column to work on each new cohort,
+      // the iferror in the formula has to be unwrapped to allow access
       hadLaserCoaching: 'FILL_ME_IN',
       numPrecourseEnrollments: 'FILL_ME_IN',
       koansMinReqs: 'No Fork',
@@ -475,13 +477,14 @@ const getNewStudents = async () => {
 (async () => {
   const newStudents = await getNewStudents();
   const eligibleNewStudents = newStudents.filter(hasIntakeFormCompleted);
+  const naughtyListStudents = newStudents.filter((student) => !hasIntakeFormCompleted(student));
 
   console.info(eligibleNewStudents.length, 'new students');
-  console.info(newStudents.length - eligibleNewStudents.length, 'students without their intake form completed');
+  console.info(naughtyListStudents.length, 'students without their intake form completed');
 
   console.info('Adding students to HRPTIV naughty list...');
   await updateEnrollmentTrackingSheet(
-    newStudents.filter((student) => !hasIntakeFormCompleted(student)),
+    naughtyListStudents,
     DOC_ID_HRPTIV,
     SHEET_ID_HRPTIV_NAUGHTY_LIST,
     true,
@@ -489,6 +492,7 @@ const getNewStudents = async () => {
   );
   // TODO: Send naughty list emails
 
+  let slackMessage = '';
   if (eligibleNewStudents.length > 0) {
     console.info('Adding students to HRPTIV roster...');
     await updateEnrollmentTrackingSheet(
@@ -510,6 +514,25 @@ const getNewStudents = async () => {
     await addStudentsToGitHub(eligibleNewStudents);
     console.info('Sending welcome emails to new students...');
     await sendEmailsToStudents(eligibleNewStudents);
-    console.info('Done!');
+
+    slackMessage += `🎉 ${eligibleNewStudents.length} new students added! 🎉\n`;
+    slackMessage += pods
+      .filter((pod) => pod.repoCompletionRowsToAdd.length > 0)
+      .map((pod) => pod.repoCompletionRowsToAdd.map(
+        (student) => `- ${student.fullName} → ${pod.name}`,
+      ).join('\n')).join('\n');
   }
+
+  if (naughtyListStudents.length > 0) {
+    slackMessage += `👿 Naughty List has ${naughtyListStudents.length} students\n`;
+    slackMessage += naughtyListStudents.map(
+      (student) => `- ${student.fullName} (${student.email})`,
+    ).join('\n');
+  }
+
+  if (slackMessage !== '') {
+    Slack.sendMessageToChannel('staff-training', slackMessage);
+  }
+
+  console.info('Done!');
 })();
