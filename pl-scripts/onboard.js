@@ -492,7 +492,6 @@ const getNewStudents = async () => {
   );
   // TODO: Send naughty list emails
 
-  let slackMessage = '';
   if (eligibleNewStudents.length > 0) {
     console.info('Adding students to HRPTIV roster...');
     await updateEnrollmentTrackingSheet(
@@ -515,23 +514,21 @@ const getNewStudents = async () => {
     console.info('Sending welcome emails to new students...');
     await sendEmailsToStudents(eligibleNewStudents);
 
-    slackMessage += `🎉 ${eligibleNewStudents.length} new students added! 🎉\n`;
+    let slackMessage = `🎉 ${eligibleNewStudents.length} new students added! 🎉\n`;
     slackMessage += pods
       .filter((pod) => pod.repoCompletionRowsToAdd.length > 0)
       .map((pod) => pod.repoCompletionRowsToAdd.map(
         (student) => `- ${student.fullName} → ${pod.name}`,
       ).join('\n')).join('\n');
-  }
-
-  if (naughtyListStudents.length > 0) {
-    slackMessage += `👿 Naughty List has ${naughtyListStudents.length} students\n`;
-    slackMessage += naughtyListStudents.map(
-      (student) => `- ${student.fullName} (${student.email})`,
-    ).join('\n');
-  }
-
-  if (slackMessage !== '') {
-    Slack.sendMessageToChannel('staff-training', slackMessage);
+    if (naughtyListStudents.length > 0) {
+      slackMessage += `👿 Naughty List has ${naughtyListStudents.length} students\n`;
+      slackMessage += naughtyListStudents.map(
+        (student) => `- ${student.fullName} (${student.email})`,
+      ).join('\n');
+    }
+    if (slackMessage !== '') {
+      Slack.sendMessageToChannel('staff-training', slackMessage);
+    }
   }
 
   console.info('Done!');
