@@ -35,6 +35,64 @@ const UNDERBAR_HASH = '44fdd3eaefeb8d3e30f5ce1d9fdeec606715757e';
 const TWIDDLER_HASH = '4197fb2da8306b135ff4e0b26af43cd3ff57313c';
 const RECURSION_HASH = '442eea294c309d6754c4b15c7c0cb746936675d7';
 
+const NAUGHTY_LIST_HEADERS = [
+  'fullName',
+  'campus',
+  'githubHandle',
+  'dateAddedToPrecourse',
+  'deadlineGroup\n(Keep Blank)',
+  'email',
+  'courseStartDate',
+  'productCode',
+  'stage',
+  'separationStatus',
+  'separationType',
+  'sfdcContactId',
+  'sfdcOpportunityId',
+  'secondaryEmail',
+  'preferredFirstName',
+  'birthday',
+  'phoneNumber',
+  'mailingAddress',
+  'emergencyContactName',
+  'emergencyContactPhone',
+  'emergencyContactRelationship',
+  'tshirtSize',
+  'tshirtFit',
+  'highestDegree',
+  'gender',
+  'race',
+  'ethnicity',
+  'identifyAsLGBTQ',
+  'isUSVeteran',
+  'isDependentOfUSVeteran',
+  'isCitizenOrPermanentResident',
+  'hoodieSize',
+  'addressWhileInSchool',
+  'allergies',
+  'otherAddress',
+  'studentFunding1',
+  'studentFunding1Stage',
+  'paymentOption',
+  'namePronunciation',
+  'pronouns',
+  'operatingSystem',
+  'canCelebrateBirthday',
+  'obligationsDuringCourse',
+  'strengths',
+  'otherBootcampsAppliedTo',
+  'firstChoiceBootcamp',
+  'whyHackReactor',
+  'funFact',
+  'previousPaymentType',
+  'selfReportedPrepartion',
+  'alumniStage',
+  'salaryPriorToProgram',
+  'linkedInUsername',
+  'ageAtStart',
+  'studentOnboardingFormCompletedOn',
+];
+
 // Week calculation for deadlines & groups
 const WEEK_DURATION_MS = 1000 * 60 * 60 * 24 * 7;
 function getCurrentCohortWeek() {
@@ -65,9 +123,13 @@ const hasIntakeFormCompleted = (student) => student.funFact
 const isFullTime = (student) => student.campus !== 'RPT Pacific';
 const isPartTime = (student) => !isFullTime(student);
 
-const updateEnrollmentTrackingSheet = async (students, docID, sheetID) => {
+const updateEnrollmentTrackingSheet = async (students, docID, sheetID, clear, headers) => {
   const doc = await loadGoogleSpreadsheet(docID);
   const sheet = doc.sheetsById[sheetID];
+  if (clear) {
+    await sheet.clear();
+    await sheet.setHeaderRow(headers);
+  }
   await sheet.addRows(students);
 };
 
@@ -398,7 +460,6 @@ const getNewStudents = async () => {
   const partTimeStudentsSFDC = (await Salesforce
     .getStudents(PART_TIME_COURSE_START_DATE, SFDC_PART_TIME_COURSE_TYPE))
     .filter(isEligibleToEnroll);
-  
   const processedStudents = processStudents(fullTimeStudentsSFDC, partTimeStudentsSFDC)
     .filter((student) => !enrolledStudentContactIDs.includes(student.sfdcContactId))
     .map((student) => ({
@@ -416,12 +477,13 @@ const getNewStudents = async () => {
   console.info(newStudents.length - eligibleNewStudents.length, 'students without their intake form completed');
 
   if (newStudents.length - eligibleNewStudents.length > 0) {
-    // TODO: Clear naughty list sheet
     console.info('Adding students to HRPTIV naughty list...');
     await updateEnrollmentTrackingSheet(
       newStudents.filter((student) => !hasIntakeFormCompleted(student)),
       DOC_ID_HRPTIV,
       SHEET_ID_HRPTIV_NAUGHTY_LIST,
+      true,
+      NAUGHTY_LIST_HEADERS,
     );
     // TODO: Send naughty list emails
   }
