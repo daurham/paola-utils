@@ -100,7 +100,7 @@ const addStudentsToGoogleGroups = (students) => Promise.all([
 
 const createStudentSlackChannels = (students) => {
   const fullNames = students.map((student) => student.fullName);
-  Slack.createChannelPerStudent(fullNames);
+  return Slack.createChannelPerStudent(fullNames);
 };
 
 const addStudentsToGitHub = async (students) => {
@@ -441,7 +441,7 @@ const getNewStudents = async () => {
     console.info('Adding students to Google Groups...');
     await addStudentsToGoogleGroups(eligibleNewStudents);
     console.info('Creating Slack channels...');
-    createStudentSlackChannels(eligibleNewStudents);
+    await createStudentSlackChannels(eligibleNewStudents);
     console.info('Adding students to GitHub team and creating branches...');
     await addStudentsToGitHub(eligibleNewStudents);
     console.info('Sending welcome emails to new students...');
