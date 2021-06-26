@@ -25,7 +25,7 @@ const {
   SFDC_FULL_TIME_COURSE_TYPE,
   SFDC_PART_TIME_COURSE_TYPE,
 } = require('../constants');
-const techMentors = require('./tech-mentors');
+const techMentors = require('../tech-mentors');
 const loadGoogleSpreadsheet = require('./loadGoogleSpreadsheet');
 
 // TODO: Get these hashes automatically when creating branches
