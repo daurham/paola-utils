@@ -28,13 +28,6 @@ const {
   SFDC_PART_TIME_COURSE_TYPE,
 } = require('../constants');
 
-// TODO: Get these hashes automatically when creating branches
-const JAVASCRIPT_KOANS_HASH = '244011080f0e8b2d1ff5b927deb9345905f6e651';
-const TESTBUILDER_HASH = 'ffb44f876ad0ff227569e3808bcb9be014896d86';
-const UNDERBAR_HASH = '44fdd3eaefeb8d3e30f5ce1d9fdeec606715757e';
-const TWIDDLER_HASH = '4197fb2da8306b135ff4e0b26af43cd3ff57313c';
-const RECURSION_HASH = '442eea294c309d6754c4b15c7c0cb746936675d7';
-
 const NAUGHTY_LIST_HEADERS = [
   'fullName',
   'campus',
@@ -238,11 +231,11 @@ const addStudentsToGitHub = async (students) => {
   const gitHandles = students.map((student) => student.githubHandle);
 
   await GitHub.addUsersToTeam(gitHandles, GITHUB_STUDENT_TEAM);
-  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-javascript-koans`, JAVASCRIPT_KOANS_HASH, gitHandles);
-  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-testbuilder`, TESTBUILDER_HASH, gitHandles);
-  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-underbar`, UNDERBAR_HASH, gitHandles);
-  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-twiddler`, TWIDDLER_HASH, gitHandles);
-  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-recursion`, RECURSION_HASH, gitHandles);
+  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-javascript-koans`, gitHandles);
+  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-testbuilder`, gitHandles);
+  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-underbar`, gitHandles);
+  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-twiddler`, gitHandles);
+  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-recursion`, gitHandles);
 };
 
 const sendEmailsToStudents = async (students) => {

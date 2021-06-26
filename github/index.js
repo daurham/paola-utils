@@ -1,11 +1,14 @@
 const fetch = require('node-fetch');
 const { GITHUB_API_USERS, GITHUB_API_TEAMS } = require('../constants');
 
-// ------------------------------
-// GitHub API Integrations
-// ------------------------------
-
 const headers = { Authorization: `token ${process.env.GIT_AUTH_TOKEN}` };
+
+function gitHubAPIRequest(endpoint, method, body) {
+  return fetch(
+    `https://api.github.com/${endpoint}`,
+    { method, body: typeof body === 'string' ? body : JSON.stringify(body), headers },
+  ).then((res) => res.json());
+}
 
 // Validate a github username exists
 exports.validateUser = async (username) => {
@@ -137,14 +140,13 @@ exports.removeUsersFromTeam = async (usernames, team) => {
 };
 
 // Create Branch
-exports.createBranches = async (accountName, repoName, commitHash, branchNames) => {
-  const promises = branchNames.map(async (branchName) => {
-    const newBranch = await fetch(
-      `https://api.github.com/repos/${accountName}/${repoName}/git/refs`,
-      { method: 'POST', headers, body: JSON.stringify({ ref: `refs/heads/${branchName}`, sha: commitHash }) },
-    );
-    return newBranch.status;
-  });
+exports.createBranches = async (accountName, repoName, branchNames) => {
+  const commitHash = (await gitHubAPIRequest(`repos/${accountName}/${repoName}/git/ref/heads/master`)).object.sha;
+  const promises = branchNames.map((branchName) => gitHubAPIRequest(
+    `repos/${accountName}/${repoName}/git/refs`,
+    'POST',
+    { ref: `refs/heads/${branchName}`, sha: commitHash },
+  ));
   const result = await Promise.all(promises);
-  return result.every((status) => status === 201);
+  return result.every((res) => res.ref);
 };
