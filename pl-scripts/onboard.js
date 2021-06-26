@@ -8,6 +8,8 @@ const Salesforce = require('../salesforce');
 const GitHub = require('../github');
 const Learn = require('../learn');
 const Slack = require('../slack');
+const techMentors = require('../tech-mentors');
+const loadGoogleSpreadsheet = require('./loadGoogleSpreadsheet');
 const {
   COHORT_ID,
   PRECOURSE_COHORT_START_DATE,
@@ -25,8 +27,6 @@ const {
   SFDC_FULL_TIME_COURSE_TYPE,
   SFDC_PART_TIME_COURSE_TYPE,
 } = require('../constants');
-const techMentors = require('../tech-mentors');
-const loadGoogleSpreadsheet = require('./loadGoogleSpreadsheet');
 
 // TODO: Get these hashes automatically when creating branches
 const JAVASCRIPT_KOANS_HASH = '244011080f0e8b2d1ff5b927deb9345905f6e651';
@@ -114,10 +114,6 @@ const rateLimiter = new Bottleneck({
 const addStudentToCohortRL = rateLimiter.wrap(Learn.addStudentToCohort);
 const addStudentToGroupRL = rateLimiter.wrap(GGroups.addStudentToGroup);
 
-const isEligibleToEnroll = (student) => student.stage === 'Deposit Paid' || student.stage === 'Accepted';
-const sortStudentsByCampus = (students) => students.sort(
-  (a, b) => a.campus.toLowerCase().localeCompare(b.campus.toLowerCase()),
-);
 const hasIntakeFormCompleted = (student) => student.funFact
   && student.selfReportedPrepartion && student.githubHandle && student.pronouns;
 const isFullTime = (student) => student.campus !== 'RPT Pacific';
@@ -133,12 +129,85 @@ const updateEnrollmentTrackingSheet = async (students, docID, sheetID, clear, he
   await sheet.addRows(students);
 };
 
+const formatStudentForRepoCompletion = (student, techMentor) => ({
+  fullName: student.fullName,
+  campus: student.campus,
+  githubHandle: student.githubHandle,
+  deadlineGroup: currentDeadlineGroup,
+  dateAdded: student.dateAddedToPrecourse,
+  email: student.email,
+  techMentor,
+  // VBAFundingType: student.VBAFundingType,
+  // TODO: Maybe handle setting these to the proper formulas?
+  prepType: 'FILL_ME_IN', // student.selfReportedPrepartion,
+  // NB: for this column to work on each new cohort,
+  // the iferror in the formula has to be unwrapped to allow access
+  hadLaserCoaching: 'FILL_ME_IN',
+  numPrecourseEnrollments: 'FILL_ME_IN',
+  koansMinReqs: 'No Fork',
+  javascriptKoans: 'No Fork',
+  testbuilder: 'No Fork',
+  underbarPartOne: 'No Fork',
+  underbarPartTwo: 'No Fork',
+  twiddler: 'No Fork',
+  recursion: 'No Fork',
+  partOneComplete: 'FILL_ME_IN',
+  partTwoComplete: 'FILL_ME_IN',
+  partThreeComplete: 'FILL_ME_IN',
+  allComplete: 'FILL_ME_IN',
+  // onTimeKoansPR: student.onTimeKoansPR,
+  // onTimeTestbuilderPR: student.onTimeTestbuilderPR,
+  // onTimeUnderbarOnePR: student.onTimeUnderbarOnePR,
+  // onTimeTwiddlerPR: student.onTimeTwiddlerPR,
+  // onTimeRecursionPR: student.onTimeRecursionPR,
+  // notes: student.notes,
+});
+
 const getRepoCompletionSheetRowCount = async (techMentor) => {
   const doc = await loadGoogleSpreadsheet(DOC_ID_PULSE);
   const sheetID = techMentor.repoCompletionSheetID;
   const sheet = doc.sheetsById[sheetID];
   const rows = await sheet.getRows();
   return rows.filter((row) => row.githubHandle).length;
+};
+
+const weightedPodSize = (pod) => Math.ceil(pod.podSize / (pod.podSizeRatio || 1));
+
+const assignStudentsToPods = async (students) => {
+  const podSizes = await Promise.all(
+    techMentors.map((techMentor) => getRepoCompletionSheetRowCount(techMentor)),
+  );
+  const techMentorsWithPodSize = techMentors.map((techMentor, index) => ({
+    ...techMentor,
+    podSize: podSizes[index],
+    repoCompletionRowsToAdd: [],
+  }));
+
+  students.forEach((student) => {
+    const pod = techMentorsWithPodSize.reduce((smallestPod, currentPod) => {
+      if (!smallestPod || weightedPodSize(smallestPod) > weightedPodSize(currentPod)) {
+        return currentPod;
+      }
+      return smallestPod;
+    });
+    console.info(`Assigning ${student.fullName} to ${pod.name}'s pod`);
+
+    pod.podSize += 1;
+    pod.repoCompletionRowsToAdd.push(formatStudentForRepoCompletion(student, pod.name));
+  });
+
+  return techMentorsWithPodSize;
+};
+
+const addStudentsToRepoCompletionSheets = async (pods) => {
+  const doc = await loadGoogleSpreadsheet(DOC_ID_PULSE);
+  const repoCompletionPromises = pods
+    .filter((pod) => pod.repoCompletionRowsToAdd.length > 0)
+    .map((pod) => {
+      const sheet = doc.sheetsById[pod.repoCompletionSheetID];
+      return sheet.addRows(pod.repoCompletionRowsToAdd);
+    });
+  return Promise.all(repoCompletionPromises);
 };
 
 const addStudentsToLearnCohort = (students) => Promise.all(
@@ -177,9 +246,6 @@ const addStudentsToGitHub = async (students) => {
 };
 
 const sendEmailsToStudents = async (students) => {
-  // -----------------
-  // EMAILs ON-BOARDING
-  // -----------------
   const PROGRAM_EMAIL = 'sei.precourse@galvanize.com';
   const PROGRAM_NAME = 'SEI Precourse';
   const alias = { name: PROGRAM_NAME, email: PROGRAM_EMAIL };
@@ -248,85 +314,20 @@ const getEnrolledStudentSFDCContactIDs = async (docID, sheetID) => {
   return rows.map((row) => row.sfdcContactId);
 };
 
-const processStudents = (fullTimeStudents, partTimeStudents) => {
-  const fullTimeStudentsForSheet = fullTimeStudents.map((student) => {
-    let fullTimeCampus = student.campus;
-    if (student.productCode.includes('RFT')) {
-      fullTimeCampus = 'RFT Pacific';
-    } else if (student.productCode.includes('RFE')) {
-      fullTimeCampus = 'RFT Eastern';
-    }
+const formatSFDCStudentForRoster = (student) => {
+  let { campus } = student;
+  if (student.productCode.includes('RFT')) campus = 'RFT Pacific';
+  if (student.productCode.includes('RFE')) campus = 'RFT Eastern';
+  if (student.productCode.includes('RPT')) campus = 'RPT Pacific';
 
-    return {
-      campus: fullTimeCampus,
-      stage: student.stage,
-      fullName: student.fullName,
-      email: student.email,
-      secondaryEmail: student.secondaryEmail,
-      dateAddedToPrecourse: '5/11/2020 - Initial Release',
-      githubHandle: student.github,
-      courseStartDate: student.courseStartDate,
-      productCode: student.productCode,
-      separationStatus: student.separationStatus,
-      separationType: student.separationType,
-      separationReason: student.separationReason,
-      separationNotes: student.separationNotes,
-      lastDayOfAttendance: student.lastDayOfAttendance,
-      lastDayOfAttendanceAcronym: student.lastDayOfAttendanceAcronym,
-      dateOfDetermination: student.dateOfDetermination,
-      sfdcContactId: student.sfdcContactId,
-      sfdcOpportunityId: student.sfdcOpportunityId,
-      preferredFirstName: student.preferredFirstName,
-      birthday: student.birthday,
-      phoneNumber: student.phoneNumber,
-      mailingAddress: student.mailingAddress,
-      emergencyContactName: student.emergencyContactName,
-      emergencyContactPhone: student.emergencyContactPhone,
-      emergencyContactRelationship: student.emergencyContactRelationship,
-      tshirtSize: student.tshirtSize,
-      tshirtFit: student.tshirtFit,
-      highestDegree: student.highestDegree,
-      gender: student.gender,
-      race: student.race,
-      ethnicity: student.ethnicity,
-      identifyAsLGBTQ: student.identifyAsLGBTQ,
-      isUSVeteran: student.isUSVeteran ? 'Yes' : 'No',
-      isDependentOfUSVeteran: student.isDependentOfUSVeteran ? 'Yes' : 'No',
-      isCitizenOrPermanentResident: student.isCitizenOrPermanentResident ? 'Yes' : 'No',
-      hoodieSize: student.hoodieSize,
-      addressWhileInSchool: student.addressWhileInSchool,
-      allergies: student.allergies,
-      otherAddress: student.otherAddress,
-      studentFunding1: student.studentFunding1,
-      studentFunding1Stage: student.studentFunding1Stage,
-      paymentOption: student.paymentOption,
-      namePronunciation: student.namePronunciation,
-      pronouns: student.pronouns,
-      operatingSystem: student.operatingSystem,
-      canCelebrateBirthday: student.canCelebrateBirthday,
-      obligationsDuringCourse: student.obligationsDuringCourse,
-      strengths: student.strengths,
-      otherBootcampsAppliedTo: student.otherBootcampsAppliedTo,
-      firstChoiceBootcamp: student.firstChoiceBootcamp,
-      whyHackReactor: student.whyHackReactor,
-      funFact: student.funFact,
-      previousPaymentType: student.previousPaymentType,
-      selfReportedPrepartion: student.selfReportedPrepartion,
-      alumniStage: student.alumniStage,
-      salaryPriorToProgram: student.salaryPriorToProgram,
-      linkedInUsername: student.linkedInUsername,
-      ageAtStart: student.ageAtStart,
-      studentOnboardingFormCompletedOn: new Date(student.studentOnboardingFormCompletedOn),
-    };
-  });
+  return {
+    campus,
+    dateAddedToPrecourse: format(new Date(), 'MM/dd/yyyy'),
 
-  const partTimeStudentsForSheet = partTimeStudents.map((student) => ({
-    campus: 'RPT Pacific',
     stage: student.stage,
     fullName: student.fullName,
     email: student.email,
     secondaryEmail: student.secondaryEmail,
-    dateAddedToPrecourse: '5/11/2020 - Initial Release',
     githubHandle: student.github,
     courseStartDate: student.courseStartDate,
     productCode: student.productCode,
@@ -380,80 +381,7 @@ const processStudents = (fullTimeStudents, partTimeStudents) => {
     linkedInUsername: student.linkedInUsername,
     ageAtStart: student.ageAtStart,
     studentOnboardingFormCompletedOn: new Date(student.studentOnboardingFormCompletedOn),
-  }));
-
-  return fullTimeStudentsForSheet.concat(partTimeStudentsForSheet);
-};
-
-const weightedPodSize = (pod) => Math.ceil(pod.podSize / (pod.podSizeRatio || 1));
-
-const assignStudentsToPods = async (students) => {
-  const podSizes = await Promise.all(
-    techMentors.map((techMentor) => getRepoCompletionSheetRowCount(techMentor)),
-  );
-  const techMentorsWithPodSize = techMentors.map((techMentor, index) => ({
-    ...techMentor,
-    podSize: podSizes[index],
-    repoCompletionRowsToAdd: [],
-  }));
-
-  students.forEach((student) => {
-    const pod = techMentorsWithPodSize.reduce((smallestPod, currentPod) => {
-      if (!smallestPod || weightedPodSize(smallestPod) > weightedPodSize(currentPod)) {
-        return currentPod;
-      }
-      return smallestPod;
-    });
-    console.info(`Assigning ${student.fullName} to ${pod.name}'s pod`);
-
-    pod.podSize += 1;
-    pod.repoCompletionRowsToAdd.push({
-      fullName: student.fullName,
-      campus: student.campus,
-      githubHandle: student.githubHandle,
-      deadlineGroup: currentDeadlineGroup,
-      dateAdded: student.dateAddedToPrecourse,
-      email: student.email,
-      techMentor: pod.name,
-      // VBAFundingType: student.VBAFundingType,
-      // TODO: Maybe handle setting these to the proper formulas?
-      prepType: 'FILL_ME_IN', // student.selfReportedPrepartion,
-      // NB: for this column to work on each new cohort,
-      // the iferror in the formula has to be unwrapped to allow access
-      hadLaserCoaching: 'FILL_ME_IN',
-      numPrecourseEnrollments: 'FILL_ME_IN',
-      koansMinReqs: 'No Fork',
-      javascriptKoans: 'No Fork',
-      testbuilder: 'No Fork',
-      underbarPartOne: 'No Fork',
-      underbarPartTwo: 'No Fork',
-      twiddler: 'No Fork',
-      recursion: 'No Fork',
-      partOneComplete: 'FILL_ME_IN',
-      partTwoComplete: 'FILL_ME_IN',
-      partThreeComplete: 'FILL_ME_IN',
-      allComplete: 'FILL_ME_IN',
-      // onTimeKoansPR: student.onTimeKoansPR,
-      // onTimeTestbuilderPR: student.onTimeTestbuilderPR,
-      // onTimeUnderbarOnePR: student.onTimeUnderbarOnePR,
-      // onTimeTwiddlerPR: student.onTimeTwiddlerPR,
-      // onTimeRecursionPR: student.onTimeRecursionPR,
-      // notes: student.notes,
-    });
-  });
-
-  return techMentorsWithPodSize;
-};
-
-const addStudentsToRepoCompletionSheets = async (pods) => {
-  const doc = await loadGoogleSpreadsheet(DOC_ID_PULSE);
-  const repoCompletionPromises = pods
-    .filter((pod) => pod.repoCompletionRowsToAdd.length > 0)
-    .map((pod) => {
-      const sheet = doc.sheetsById[pod.repoCompletionSheetID];
-      return sheet.addRows(pod.repoCompletionRowsToAdd);
-    });
-  return Promise.all(repoCompletionPromises);
+  };
 };
 
 const getNewStudents = async () => {
@@ -461,19 +389,15 @@ const getNewStudents = async () => {
     DOC_ID_HRPTIV,
     SHEET_ID_HRPTIV_ROSTER,
   );
-  const fullTimeStudentsSFDC = (await Salesforce
-    .getStudents(FULL_TIME_COURSE_START_DATE, SFDC_FULL_TIME_COURSE_TYPE))
-    .filter(isEligibleToEnroll);
-  const partTimeStudentsSFDC = (await Salesforce
-    .getStudents(PART_TIME_COURSE_START_DATE, SFDC_PART_TIME_COURSE_TYPE))
-    .filter(isEligibleToEnroll);
-  const processedStudents = processStudents(fullTimeStudentsSFDC, partTimeStudentsSFDC)
-    .filter((student) => !enrolledStudentContactIDs.includes(student.sfdcContactId))
-    .map((student) => ({
-      ...student,
-      dateAddedToPrecourse: format(new Date(), 'MM/dd/yyyy'),
-    }));
-  return sortStudentsByCampus(processedStudents);
+  return []
+    .concat(
+      await Salesforce.getStudents(FULL_TIME_COURSE_START_DATE, SFDC_FULL_TIME_COURSE_TYPE),
+      await Salesforce.getStudents(PART_TIME_COURSE_START_DATE, SFDC_PART_TIME_COURSE_TYPE),
+    )
+    .filter((student) => (student.stage === 'Deposit Paid' || student.stage === 'Accepted')
+      && !enrolledStudentContactIDs.includes(student.sfdcContactId))
+    .map(formatSFDCStudentForRoster)
+    .sort((a, b) => a.campus.toLowerCase().localeCompare(b.campus.toLowerCase()));
 };
 
 (async () => {
@@ -484,7 +408,8 @@ const getNewStudents = async () => {
   console.info(eligibleNewStudents.length, 'new students');
   console.info(naughtyListStudents.length, 'students without their intake form completed');
 
-  console.info('Adding students to HRPTIV naughty list...');
+  // Always update naughty list, ensuring old records are all cleared
+  console.info('Updating HRPTIV naughty list...');
   await updateEnrollmentTrackingSheet(
     naughtyListStudents,
     DOC_ID_HRPTIV,
