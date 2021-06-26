@@ -516,14 +516,14 @@ const getNewStudents = async () => {
     console.info('Sending welcome emails to new students...');
     await sendEmailsToStudents(eligibleNewStudents);
 
-    let slackMessage = `🎉 ${eligibleNewStudents.length} new students added! 🎉\n`;
+    let slackMessage = `🎉 ${eligibleNewStudents.length} new student${eligibleNewStudents.length !== 1 ? 's' : ''} added! 🎉\n`;
     slackMessage += pods
       .filter((pod) => pod.repoCompletionRowsToAdd.length > 0)
       .map((pod) => pod.repoCompletionRowsToAdd.map(
         (student) => `- ${student.fullName} → ${pod.name}`,
       ).join('\n')).join('\n');
     if (naughtyListStudents.length > 0) {
-      slackMessage += `👿 Naughty List has ${naughtyListStudents.length} students\n`;
+      slackMessage += `\n👿 Naughty List has ${naughtyListStudents.length} student${naughtyListStudents.length !== 1 ? 's' : ''}\n`;
       slackMessage += naughtyListStudents.map(
         (student) => `- ${student.fullName} (${student.email})`,
       ).join('\n');
