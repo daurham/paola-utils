@@ -1,32 +1,7 @@
 /* eslint-disable no-console */
 require('dotenv').config();
 const fetch = require('node-fetch');
-// const https = require('https');
-// const Bottleneck = require('bottleneck');
-
-// PRECOURSE 1 Workspace
-// const idObject = {
-//   Beverly: 'UV5M83A3A',
-//   Steven: 'U01JWMD1CM9',
-//   Eliza: 'U01NRN13YUE',
-//   Daniel: 'U01P4LB6Q5A',
-//   Jake: 'U01P244S4UX',
-//   Marco: 'U02000L2BCJ',
-//   David: 'U010L2RB5B2',
-// };
-
-// PRECOURSE 2 Workspace
-const TECH_MENTOR_USER_ID_MAP = {
-  Beverly: 'U013VKW4D7B',
-  Daniel: 'U01R3J6S8KS',
-  Eliza: 'U01QDV9RA2X',
-  Steven: 'U014KAZ8ZTK',
-  Jake: 'U01QSCBDA8H',
-  David: 'U024K843NEB',
-  Marco: 'U01QETJC51V',
-  // Peter: 'U015TC8M53R', // Unused, Slack token is Peter's so he doesn't need to be added
-};
-const techMentorUserIDs = Object.values(TECH_MENTOR_USER_ID_MAP).join(',');
+const { SLACK_TM_EMAILS } = require('../constants');
 
 function slackAPIRequest(endpoint, method, body) {
   const headers = {
@@ -39,9 +14,8 @@ function slackAPIRequest(endpoint, method, body) {
   ).then((res) => res.json());
 }
 
-
 // Send a message to a channel
-exports.sendMessageToChannel = (channel, text) => slackAPIRequest(
+const sendMessageToChannel = (channel, text) => slackAPIRequest(
   'chat.postMessage',
   'POST',
   { channel, text },
@@ -83,17 +57,23 @@ const setChannelTopic = async (channelID, topic) => slackAPIRequest(
   { channel: channelID, topic },
 );
 
-exports.getUserIdByEmail = async (email) => slackAPIRequest(
-  `users.lookupByEmail?email=${email}`,
-  'GET',
-);
+// const getUserIdByEmail = async (email) => slackAPIRequest(
+//   `users.lookupByEmail?email=${email}`,
+//   'GET',
+// );
 
-exports.getAllChannelsInWorkspace = async () => slackAPIRequest(
-  'conversations.list',
-  'GET',
-);
+// const getAllChannelsInWorkspace = async () => slackAPIRequest(
+//   'conversations.list',
+//   'GET',
+// );
+const getTechMentorUserIDs = async () => {
+  const users = await slackAPIRequest('users.list', 'GET');
+  return users.members
+    .filter((user) => SLACK_TM_EMAILS.includes(user.profile.email))
+    .map((user) => user.id);
+};
 
-exports.createChannelPerStudent = async (nameList) => {
+const createChannelPerStudent = async (nameList) => {
   const formattedNames = formatListOfNames(nameList);
   formattedNames.forEach(async (name) => {
     const result = await createChannel(name);
@@ -111,16 +91,24 @@ exports.createChannelPerStudent = async (nameList) => {
     if (!purposeSet.ok) console.warn('Failed to set channel purpose', purposeSet);
     const topicSet = await setChannelTopic(result.channel.id, 'Your personal channel with the Precourse Team.');
     if (!topicSet.ok) console.warn('Failed to set channel topic', topicSet);
+    const techMentorUserIDs = await getTechMentorUserIDs();
     const invited = await inviteUsersToChannel(result.channel.id, techMentorUserIDs);
     if (!invited.ok) console.warn('Failed to invite users to channel', invited);
   });
 };
-exports.inviteNewTmsToChannels = async () => {}; // TODO?
-exports.sendMessageViaDM = async () => {}; // TODO?
-exports.getChannelHistory = async (channelID) => slackAPIRequest(
-  `conversations.history?channel=${channelID}&limit=1000`,
-  'GET',
-);
+// const inviteNewTmsToChannels = async () => {}; // TODO?
+// const sendMessageViaDM = async () => {}; // TODO?
+// const getChannelHistory = async (channelID) => slackAPIRequest(
+//   `conversations.history?channel=${channelID}&limit=1000`,
+//   'GET',
+// );
+
+module.exports = {
+  slackAPIRequest,
+
+  createChannelPerStudent,
+  sendMessageToChannel,
+};
 
 // WIP block?
 // const apiConfig = {};

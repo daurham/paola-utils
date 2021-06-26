@@ -38,6 +38,17 @@ module.exports = {
   SHEET_ID_CESP_MODULE_COMPLETION: '1744886664',
   SHEET_ID_CESP_ROSTER: '0',
 
+  /* Slack */
+  SLACK_TM_EMAILS: [
+    'beverly.hernandez@galvanize.com',
+    'daniel.rouse@galvanize.com',
+    'eliza.drinker@galvanize.com',
+    'steven.chung@galvanize.com',
+    'jake.ascher@galvanize.com',
+    'david.coleman@galvanize.com',
+    'marco.castillo@galvanize.com',
+  ],
+
   /* Salesforce */
   SFDC_OPPTY_RECORD_ID: '012j0000000qVAP',
   SFDC_FULL_TIME_COURSE_TYPE: '12 Week',
