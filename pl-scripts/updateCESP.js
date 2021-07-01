@@ -5,7 +5,7 @@
  *  - remove or update the "CES&P is updated" box with date on the sheet
  */
 require('dotenv').config();
-const { loadGoogleSpreadsheet, replaceWorksheet } = require('../googleSheets');
+const { loadGoogleSpreadsheet, replaceWorksheet, getRows } = require('../googleSheets');
 const {
   DOC_ID_CESP,
   DOC_ID_PULSE,
@@ -42,39 +42,6 @@ const CESP_MODULE_COMPLETION_SHEET_HEADERS = [
   'All Complete',
 ];
 
-const getRepoCompletionSheetData = async (sheet) => {
-  const rows = await sheet.getRows();
-  return rows.map((row) => ({
-    fullName: row.fullName,
-    campus: row.campus,
-    githubHandle: row.githubHandle,
-    deadlineGroup: row.deadlineGroup,
-    dateAdded: row.dateAdded,
-    email: row.email,
-    techMentor: row.techMentor,
-    VBAFundingType: row.VBAFundingType,
-    prepType: row.prepType,
-    hadLaserCoaching: row.hadLaserCoaching,
-    numPrecourseEnrollments: row.numPrecourseEnrollments,
-    koansMinReqs: row.koansMinReqs,
-    javascriptKoans: row.javascriptKoans,
-    testbuilder: row.testbuilder,
-    underbarPartOne: row.underbarPartOne,
-    underbarPartTwo: row.underbarPartTwo,
-    twiddler: row.twiddler,
-    recursion: row.recursion,
-    partOneComplete: row.partOneComplete,
-    partTwoComplete: row.partTwoComplete,
-    partThreeComplete: row.partThreeComplete,
-    allComplete: row.allComplete,
-    onTimeKoansPR: row.onTimeKoansPR,
-    onTimeTestbuilderPR: row.onTimeTestbuilderPR,
-    onTimeUnderbarOnePR: row.onTimeUnderbarOnePR,
-    onTimeTwiddlerPR: row.onTimeTwiddlerPR,
-    onTimeRecursionPR: row.onTimeRecursionPR,
-    notes: row.notes,
-  }));
-};
 const sortStudentsByFullName = (a, b) =>
   a.fullName.toLowerCase().localeCompare(b.fullName.toLowerCase());
 const sortStudentsByCampus = (a, b) =>
@@ -114,7 +81,7 @@ const formatStudentsForCESPModuleCompletionSheet = (students) => students.map((s
   console.info('Retrieving roster from Pulse...');
   const pulseSheet = await loadGoogleSpreadsheet(DOC_ID_PULSE);
   const studentsFromRepoCompletion = await Promise.all(
-    techMentors.map((techMentor) => getRepoCompletionSheetData(
+    techMentors.map((techMentor) => getRows(
       pulseSheet.sheetsById[techMentor.repoCompletionSheetID],
     )),
   );
