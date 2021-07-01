@@ -5,6 +5,7 @@
  *  - remove or update the "CES&P is updated" box with date on the sheet
  */
 require('dotenv').config();
+const { loadGoogleSpreadsheet, replaceWorksheet } = require('../googleSheets');
 const {
   DOC_ID_CESP,
   DOC_ID_PULSE,
@@ -12,7 +13,6 @@ const {
   SHEET_ID_CESP_MODULE_COMPLETION,
 } = require('../constants');
 const techMentors = require('../tech-mentors');
-const loadGoogleSpreadsheet = require('./loadGoogleSpreadsheet');
 
 const CESP_ROSTER_SHEET_HEADERS = [
   'Full Name',
@@ -42,9 +42,7 @@ const CESP_MODULE_COMPLETION_SHEET_HEADERS = [
   'All Complete',
 ];
 
-const getRepoCompletionSheetData = async (docID, sheetID) => {
-  const doc = await loadGoogleSpreadsheet(docID);
-  const sheet = doc.sheetsById[sheetID];
+const getRepoCompletionSheetData = async (sheet) => {
   const rows = await sheet.getRows();
   return rows.map((row) => ({
     fullName: row.fullName,
@@ -84,22 +82,6 @@ const sortStudentsByCampus = (a, b) =>
 const sortStudentsByDateAdded = (a, b) =>
   a.dateAdded.toLowerCase().localeCompare(b.dateAdded.toLowerCase());
 
-const updateCESPRosterSheet = async (students, docID, sheetID) => {
-  const doc = await loadGoogleSpreadsheet(docID);
-  const sheet = doc.sheetsById[sheetID];
-  await sheet.clear();
-  await sheet.setHeaderRow(CESP_ROSTER_SHEET_HEADERS);
-  await sheet.addRows(students);
-};
-
-const updateCESPModuleCompletionSheet = async (students, docID, sheetID) => {
-  const doc = await loadGoogleSpreadsheet(docID);
-  const sheet = doc.sheetsById[sheetID];
-  await sheet.clear();
-  await sheet.setHeaderRow(CESP_MODULE_COMPLETION_SHEET_HEADERS);
-  await sheet.addRows(students);
-};
-
 const formatStudentsForCESPRosterSheet = (students) => students.map((student) => ({
   'Full Name': student.fullName,
   'Campus': student.campus,
@@ -129,10 +111,12 @@ const formatStudentsForCESPModuleCompletionSheet = (students) => students.map((s
 }));
 
 (async () => {
+  console.info('Retrieving roster from Pulse...');
+  const pulseSheet = await loadGoogleSpreadsheet(DOC_ID_PULSE);
   const studentsFromRepoCompletion = await Promise.all(
-    techMentors.map(
-      (techMentor) => getRepoCompletionSheetData(DOC_ID_PULSE, techMentor.repoCompletionSheetID),
-    ),
+    techMentors.map((techMentor) => getRepoCompletionSheetData(
+      pulseSheet.sheetsById[techMentor.repoCompletionSheetID],
+    )),
   );
   const students = studentsFromRepoCompletion
     .flat()
@@ -140,16 +124,23 @@ const formatStudentsForCESPModuleCompletionSheet = (students) => students.map((s
     .sort(sortStudentsByFullName)
     .sort(sortStudentsByDateAdded)
     .sort(sortStudentsByCampus);
-  console.info(`Adding ${students.length} students to CES&P roster...`);
   const roster = formatStudentsForCESPRosterSheet(students);
   const moduleCompletion = formatStudentsForCESPModuleCompletionSheet(students);
-  console.info('Updating roster sheet...');
-  await updateCESPRosterSheet(roster, DOC_ID_CESP, SHEET_ID_CESP_ROSTER);
-  console.info('Updating module completion sheet...');
-  await updateCESPModuleCompletionSheet(
+
+  console.info(`Adding ${students.length} students to CES&P roster.`);
+
+  console.info('Retrieving CES&P sheet...');
+  const doc = await loadGoogleSpreadsheet(DOC_ID_CESP);
+
+  console.info('Updating roster worksheet...');
+  await replaceWorksheet(doc.sheetsById[SHEET_ID_CESP_ROSTER], CESP_ROSTER_SHEET_HEADERS, roster);
+
+  console.info('Updating module completion worksheet...');
+  await replaceWorksheet(
+    doc.sheetsById[SHEET_ID_CESP_MODULE_COMPLETION],
+    CESP_MODULE_COMPLETION_SHEET_HEADERS,
     moduleCompletion,
-    DOC_ID_CESP,
-    SHEET_ID_CESP_MODULE_COMPLETION,
   );
+
   console.info('Done!');
 })();

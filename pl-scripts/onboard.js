@@ -2,14 +2,15 @@
 require('dotenv').config();
 const { format } = require('date-fns');
 const Bottleneck = require('bottleneck');
-const GGroups = require('../googleGroups');
-const GMail = require('../googleMail');
-const Salesforce = require('../salesforce');
-const GitHub = require('../github');
-const Learn = require('../learn');
-const Slack = require('../slack');
+const { addStudentToGroup } = require('../googleGroups');
+const { sendEmailFromDraft } = require('../googleMail');
+const { loadGoogleSpreadsheet, replaceWorksheet, getRows } = require('../googleSheets');
+const { getStudents: getSalesforceStudents } = require('../salesforce');
+const { addUsersToTeam, createBranches } = require('../github');
+const { addStudentToCohort } = require('../learn');
+const { createChannelPerStudent, sendMessageToChannel } = require('../slack');
 const techMentors = require('../tech-mentors');
-const loadGoogleSpreadsheet = require('./loadGoogleSpreadsheet');
+
 const {
   COHORT_ID,
   PRECOURSE_COHORT_START_DATE,
@@ -104,23 +105,13 @@ const rateLimiter = new Bottleneck({
   maxConcurrent: 3,
   minTime: 333,
 });
-const addStudentToCohortRL = rateLimiter.wrap(Learn.addStudentToCohort);
-const addStudentToGroupRL = rateLimiter.wrap(GGroups.addStudentToGroup);
+const addStudentToCohortRL = rateLimiter.wrap(addStudentToCohort);
+const addStudentToGroupRL = rateLimiter.wrap(addStudentToGroup);
 
 const hasIntakeFormCompleted = (student) => student.funFact
   && student.selfReportedPrepartion && student.githubHandle && student.pronouns;
 const isFullTime = (student) => student.campus !== 'RPT Pacific';
 const isPartTime = (student) => !isFullTime(student);
-
-const updateEnrollmentTrackingSheet = async (students, docID, sheetID, clear, headers) => {
-  const doc = await loadGoogleSpreadsheet(docID);
-  const sheet = doc.sheetsById[sheetID];
-  if (clear) {
-    await sheet.clear();
-    await sheet.setHeaderRow(headers);
-  }
-  await sheet.addRows(students);
-};
 
 const formatStudentForRepoCompletion = (student, techMentor) => ({
   fullName: student.fullName,
@@ -156,19 +147,14 @@ const formatStudentForRepoCompletion = (student, techMentor) => ({
   // notes: student.notes,
 });
 
-const getRepoCompletionSheetRowCount = async (techMentor) => {
-  const doc = await loadGoogleSpreadsheet(DOC_ID_PULSE);
-  const sheetID = techMentor.repoCompletionSheetID;
-  const sheet = doc.sheetsById[sheetID];
-  const rows = await sheet.getRows();
-  return rows.filter((row) => row.githubHandle).length;
-};
-
 const weightedPodSize = (pod) => Math.ceil(pod.podSize / (pod.podSizeRatio || 1));
 
-const assignStudentsToPods = async (students) => {
+const assignStudentsToPods = async (pulseDoc, students) => {
   const podSizes = await Promise.all(
-    techMentors.map((techMentor) => getRepoCompletionSheetRowCount(techMentor)),
+    techMentors.map(async (techMentor) => {
+      const rows = await pulseDoc.sheetsById[techMentor.repoCompletionSheetID].getRows();
+      return rows.filter((row) => row.githubHandle).length;
+    }),
   );
   const techMentorsWithPodSize = techMentors.map((techMentor, index) => ({
     ...techMentor,
@@ -192,12 +178,11 @@ const assignStudentsToPods = async (students) => {
   return techMentorsWithPodSize;
 };
 
-const addStudentsToRepoCompletionSheets = async (pods) => {
-  const doc = await loadGoogleSpreadsheet(DOC_ID_PULSE);
+const addStudentsToRepoCompletionSheets = async (pulseDoc, pods) => {
   const repoCompletionPromises = pods
     .filter((pod) => pod.repoCompletionRowsToAdd.length > 0)
     .map((pod) => {
-      const sheet = doc.sheetsById[pod.repoCompletionSheetID];
+      const sheet = pulseDoc.sheetsById[pod.repoCompletionSheetID];
       return sheet.addRows(pod.repoCompletionRowsToAdd);
     });
   return Promise.all(repoCompletionPromises);
@@ -224,18 +209,18 @@ const addStudentsToGoogleGroups = (students) => Promise.all([
 
 const createStudentSlackChannels = (students) => {
   const fullNames = students.map((student) => student.fullName);
-  return Slack.createChannelPerStudent(fullNames);
+  return createChannelPerStudent(fullNames);
 };
 
 const addStudentsToGitHub = async (students) => {
   const gitHandles = students.map((student) => student.githubHandle);
 
-  await GitHub.addUsersToTeam(gitHandles, GITHUB_STUDENT_TEAM);
-  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-javascript-koans`, gitHandles);
-  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-testbuilder`, gitHandles);
-  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-underbar`, gitHandles);
-  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-twiddler`, gitHandles);
-  await GitHub.createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-recursion`, gitHandles);
+  await addUsersToTeam(gitHandles, GITHUB_STUDENT_TEAM);
+  await createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-javascript-koans`, gitHandles);
+  await createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-testbuilder`, gitHandles);
+  await createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-underbar`, gitHandles);
+  await createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-twiddler`, gitHandles);
+  await createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-recursion`, gitHandles);
 };
 
 const sendEmailsToStudents = async (students) => {
@@ -253,7 +238,7 @@ const sendEmailsToStudents = async (students) => {
   const ccListPartTime = students.filter(isPartTime).map((student) => student.email);
 
   if (ccList.length > 0) {
-    await GMail.sendEmailFromDraft(
+    await sendEmailFromDraft(
       welcomeSubjectQuery,
       toList,
       ccList,
@@ -264,7 +249,7 @@ const sendEmailsToStudents = async (students) => {
   }
 
   if (ccListFullTime.length > 0) {
-    await GMail.sendEmailFromDraft(
+    await sendEmailFromDraft(
       deadlinesSubjectQuery,
       toList,
       ccListFullTime,
@@ -282,7 +267,7 @@ const sendEmailsToStudents = async (students) => {
   }
 
   if (ccListPartTime.length > 0) {
-    await GMail.sendEmailFromDraft(
+    await sendEmailFromDraft(
       deadlinesSubjectQuery,
       toList,
       ccListPartTime,
@@ -300,6 +285,24 @@ const sendEmailsToStudents = async (students) => {
   }
 };
 
+const sendInternalSlackMessage = async (newStudents, naughtyListStudents, pods) => {
+  let slackMessage = `🎉 ${newStudents.length} new student${newStudents.length !== 1 ? 's' : ''} added! 🎉\n`;
+  slackMessage += pods
+    .filter((pod) => pod.repoCompletionRowsToAdd.length > 0)
+    .map((pod) => pod.repoCompletionRowsToAdd.map(
+      (student) => `- ${student.fullName} → ${pod.name}`,
+    ).join('\n')).join('\n');
+  if (naughtyListStudents.length > 0) {
+    slackMessage += `\n👿 Naughty List has ${naughtyListStudents.length} student${naughtyListStudents.length !== 1 ? 's' : ''}\n`;
+    slackMessage += naughtyListStudents.map(
+      (student) => `- ${student.fullName} (${student.email})`,
+    ).join('\n');
+  }
+  if (slackMessage !== '') {
+    await sendMessageToChannel('staff-training', slackMessage);
+  }
+};
+
 const getEnrolledStudentSFDCContactIDs = async (docID, sheetID) => {
   const doc = await loadGoogleSpreadsheet(docID);
   const sheet = doc.sheetsById[sheetID];
@@ -312,67 +315,15 @@ const formatSFDCStudentForRoster = (student) => {
   if (student.productCode.includes('RFT')) campus = 'RFT Pacific';
   if (student.productCode.includes('RFE')) campus = 'RFT Eastern';
   if (student.productCode.includes('RPT')) campus = 'RPT Pacific';
-
   return {
+    ...student,
     campus,
     dateAddedToPrecourse: format(new Date(), 'MM/dd/yyyy'),
-
-    stage: student.stage,
-    fullName: student.fullName,
-    email: student.email,
-    secondaryEmail: student.secondaryEmail,
+    secondaryEmail: student.emailSecondary,
     githubHandle: student.github,
-    courseStartDate: student.courseStartDate,
-    productCode: student.productCode,
-    separationStatus: student.separationStatus,
-    separationType: student.separationType,
-    separationReason: student.separationReason,
-    separationNotes: student.separationNotes,
-    lastDayOfAttendance: student.lastDayOfAttendance,
-    lastDayOfAttendanceAcronym: student.lastDayOfAttendanceAcronym,
-    dateOfDetermination: student.dateOfDetermination,
-    sfdcContactId: student.sfdcContactId,
-    sfdcOpportunityId: student.sfdcOpportunityId,
-    preferredFirstName: student.preferredFirstName,
-    birthday: student.birthday,
-    phoneNumber: student.phoneNumber,
-    mailingAddress: student.mailingAddress,
-    emergencyContactName: student.emergencyContactName,
-    emergencyContactPhone: student.emergencyContactPhone,
-    emergencyContactRelationship: student.emergencyContactRelationship,
-    tshirtSize: student.tshirtSize,
-    tshirtFit: student.tshirtFit,
-    highestDegree: student.highestDegree,
-    gender: student.gender,
-    race: student.race,
-    ethnicity: student.ethnicity,
-    identifyAsLGBTQ: student.identifyAsLGBTQ,
     isUSVeteran: student.isUSVeteran ? 'Yes' : 'No',
     isDependentOfUSVeteran: student.isDependentOfUSVeteran ? 'Yes' : 'No',
     isCitizenOrPermanentResident: student.isCitizenOrPermanentResident ? 'Yes' : 'No',
-    hoodieSize: student.hoodieSize,
-    addressWhileInSchool: student.addressWhileInSchool,
-    allergies: student.allergies,
-    otherAddress: student.otherAddress,
-    studentFunding1: student.studentFunding1,
-    studentFunding1Stage: student.studentFunding1Stage,
-    paymentOption: student.paymentOption,
-    namePronunciation: student.namePronunciation,
-    pronouns: student.pronouns,
-    operatingSystem: student.operatingSystem,
-    canCelebrateBirthday: student.canCelebrateBirthday,
-    obligationsDuringCourse: student.obligationsDuringCourse,
-    strengths: student.strengths,
-    otherBootcampsAppliedTo: student.otherBootcampsAppliedTo,
-    firstChoiceBootcamp: student.firstChoiceBootcamp,
-    whyHackReactor: student.whyHackReactor,
-    funFact: student.funFact,
-    previousPaymentType: student.previousPaymentType,
-    selfReportedPrepartion: student.selfReportedPrepartion,
-    alumniStage: student.alumniStage,
-    salaryPriorToProgram: student.salaryPriorToProgram,
-    linkedInUsername: student.linkedInUsername,
-    ageAtStart: student.ageAtStart,
     studentOnboardingFormCompletedOn: new Date(student.studentOnboardingFormCompletedOn),
   };
 };
@@ -384,8 +335,8 @@ const getNewStudents = async () => {
   );
   return []
     .concat(
-      await Salesforce.getStudents(FULL_TIME_COURSE_START_DATE, SFDC_FULL_TIME_COURSE_TYPE),
-      await Salesforce.getStudents(PART_TIME_COURSE_START_DATE, SFDC_PART_TIME_COURSE_TYPE),
+      await getSalesforceStudents(FULL_TIME_COURSE_START_DATE, SFDC_FULL_TIME_COURSE_TYPE),
+      await getSalesforceStudents(PART_TIME_COURSE_START_DATE, SFDC_PART_TIME_COURSE_TYPE),
     )
     .filter((student) => (student.stage === 'Deposit Paid' || student.stage === 'Accepted')
       && !enrolledStudentContactIDs.includes(student.sfdcContactId))
@@ -403,26 +354,21 @@ const getNewStudents = async () => {
 
   // Always update naughty list, ensuring old records are all cleared
   console.info('Updating HRPTIV naughty list...');
-  await updateEnrollmentTrackingSheet(
-    naughtyListStudents,
-    DOC_ID_HRPTIV,
-    SHEET_ID_HRPTIV_NAUGHTY_LIST,
-    true,
+  const sheetHRPTIV = await loadGoogleSpreadsheet(DOC_ID_HRPTIV);
+  await replaceWorksheet(
+    sheetHRPTIV.sheetsById[SHEET_ID_HRPTIV_NAUGHTY_LIST],
     NAUGHTY_LIST_HEADERS,
+    naughtyListStudents,
   );
   // TODO: Send naughty list emails
 
   if (eligibleNewStudents.length > 0) {
     console.info('Adding students to HRPTIV roster...');
-    await updateEnrollmentTrackingSheet(
-      eligibleNewStudents,
-      DOC_ID_HRPTIV,
-      SHEET_ID_HRPTIV_ROSTER,
-    );
-
-    const pods = await assignStudentsToPods(eligibleNewStudents);
+    await sheetHRPTIV.sheetsById[SHEET_ID_HRPTIV_ROSTER].addRows(eligibleNewStudents);
+    const sheetPulse = await loadGoogleSpreadsheet(DOC_ID_PULSE);
+    const pods = await assignStudentsToPods(sheetPulse, eligibleNewStudents);
     console.info('Adding students to Repo Completion sheets...');
-    await addStudentsToRepoCompletionSheets(pods);
+    await addStudentsToRepoCompletionSheets(sheetPulse, pods);
     console.info('Adding students to the Learn cohort...');
     await addStudentsToLearnCohort(eligibleNewStudents);
     console.info('Adding students to Google Groups...');
@@ -433,22 +379,8 @@ const getNewStudents = async () => {
     await addStudentsToGitHub(eligibleNewStudents);
     console.info('Sending welcome emails to new students...');
     await sendEmailsToStudents(eligibleNewStudents);
-
-    let slackMessage = `🎉 ${eligibleNewStudents.length} new student${eligibleNewStudents.length !== 1 ? 's' : ''} added! 🎉\n`;
-    slackMessage += pods
-      .filter((pod) => pod.repoCompletionRowsToAdd.length > 0)
-      .map((pod) => pod.repoCompletionRowsToAdd.map(
-        (student) => `- ${student.fullName} → ${pod.name}`,
-      ).join('\n')).join('\n');
-    if (naughtyListStudents.length > 0) {
-      slackMessage += `\n👿 Naughty List has ${naughtyListStudents.length} student${naughtyListStudents.length !== 1 ? 's' : ''}\n`;
-      slackMessage += naughtyListStudents.map(
-        (student) => `- ${student.fullName} (${student.email})`,
-      ).join('\n');
-    }
-    if (slackMessage !== '') {
-      Slack.sendMessageToChannel('staff-training', slackMessage);
-    }
+    console.info('Reporting to Slack...');
+    await sendInternalSlackMessage(eligibleNewStudents, naughtyListStudents, pods);
   }
 
   console.info('Done!');
