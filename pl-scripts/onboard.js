@@ -4,18 +4,16 @@ const { format } = require('date-fns');
 const Bottleneck = require('bottleneck');
 const { addStudentToGroup } = require('../googleGroups');
 const { sendEmailFromDraft } = require('../googleMail');
-const { loadGoogleSpreadsheet, replaceWorksheet, getRows } = require('../googleSheets');
-const { getStudents: getSalesforceStudents } = require('../salesforce');
+const { loadGoogleSpreadsheet, replaceWorksheet } = require('../googleSheets');
 const { addUsersToTeam, createBranches } = require('../github');
 const { addStudentToCohort } = require('../learn');
 const { createChannelPerStudent, sendMessageToChannel } = require('../slack');
 const techMentors = require('../tech-mentors');
+const { getNewStudentsFromSFDC, hasIntakeFormCompleted } = require('./getNewStudentsFromSFDC');
 
 const {
   COHORT_ID,
   PRECOURSE_COHORT_START_DATE,
-  FULL_TIME_COURSE_START_DATE,
-  PART_TIME_COURSE_START_DATE,
   DEADLINES_FULL_TIME,
   DEADLINES_PART_TIME,
   LEARN_COHORT_ID,
@@ -25,8 +23,6 @@ const {
   DOC_ID_PULSE,
   SHEET_ID_HRPTIV_ROSTER,
   SHEET_ID_HRPTIV_NAUGHTY_LIST,
-  SFDC_FULL_TIME_COURSE_TYPE,
-  SFDC_PART_TIME_COURSE_TYPE,
 } = require('../constants');
 
 const NAUGHTY_LIST_HEADERS = [
@@ -89,14 +85,21 @@ const NAUGHTY_LIST_HEADERS = [
 
 // Week calculation for deadlines & groups
 const WEEK_DURATION_MS = 1000 * 60 * 60 * 24 * 7;
+const currentDate = new Date();
 function getCurrentCohortWeek() {
-  return Math.ceil((new Date() - new Date(PRECOURSE_COHORT_START_DATE)) / WEEK_DURATION_MS);
+  return Math.ceil((currentDate - new Date(PRECOURSE_COHORT_START_DATE)) / WEEK_DURATION_MS);
 }
 const currentCohortWeek = getCurrentCohortWeek();
-if (currentCohortWeek < 1 || currentCohortWeek > 4) {
+if (
+  currentCohortWeek < 1 || // no onboarding in W0
+  currentCohortWeek > 4 || // or after W4
+  // or after 5PM PT on Friday of W4 (5PM PT = midnight/1AM UTC next day)
+  (currentCohortWeek === 4 && currentDate.getUTCDay() > 5 && currentDate.getUTCHours() > 0)
+) {
   console.error(`Cohort week out of range (${currentCohortWeek}), exiting`);
   process.exit(1);
 }
+
 const googleGroupFullTime = `seipw${currentCohortWeek}@galvanize.com`;
 const googleGroupPartTime = `seip-rpt-w${currentCohortWeek}@galvanize.com`;
 const currentDeadlineGroup = `W${currentCohortWeek}`;
@@ -108,8 +111,6 @@ const rateLimiter = new Bottleneck({
 const addStudentToCohortRL = rateLimiter.wrap(addStudentToCohort);
 const addStudentToGroupRL = rateLimiter.wrap(addStudentToGroup);
 
-const hasIntakeFormCompleted = (student) => student.funFact
-  && student.selfReportedPrepartion && student.githubHandle && student.pronouns;
 const isFullTime = (student) => student.campus !== 'RPT Pacific';
 const isPartTime = (student) => !isFullTime(student);
 
@@ -303,13 +304,6 @@ const sendInternalSlackMessage = async (newStudents, naughtyListStudents, pods) 
   }
 };
 
-const getEnrolledStudentSFDCContactIDs = async (docID, sheetID) => {
-  const doc = await loadGoogleSpreadsheet(docID);
-  const sheet = doc.sheetsById[sheetID];
-  const rows = await sheet.getRows();
-  return rows.map((row) => row.sfdcContactId);
-};
-
 const formatSFDCStudentForRoster = (student) => {
   let { campus } = student;
   if (student.productCode.includes('RFT')) campus = 'RFT Pacific';
@@ -328,24 +322,10 @@ const formatSFDCStudentForRoster = (student) => {
   };
 };
 
-const getNewStudents = async () => {
-  const enrolledStudentContactIDs = await getEnrolledStudentSFDCContactIDs(
-    DOC_ID_HRPTIV,
-    SHEET_ID_HRPTIV_ROSTER,
-  );
-  return []
-    .concat(
-      await getSalesforceStudents(FULL_TIME_COURSE_START_DATE, SFDC_FULL_TIME_COURSE_TYPE),
-      await getSalesforceStudents(PART_TIME_COURSE_START_DATE, SFDC_PART_TIME_COURSE_TYPE),
-    )
-    .filter((student) => (student.stage === 'Deposit Paid' || student.stage === 'Accepted')
-      && !enrolledStudentContactIDs.includes(student.sfdcContactId))
+(async () => {
+  const newStudents = (await getNewStudentsFromSFDC())
     .map(formatSFDCStudentForRoster)
     .sort((a, b) => a.campus.toLowerCase().localeCompare(b.campus.toLowerCase()));
-};
-
-(async () => {
-  const newStudents = await getNewStudents();
   const eligibleNewStudents = newStudents.filter(hasIntakeFormCompleted);
   const naughtyListStudents = newStudents.filter((student) => !hasIntakeFormCompleted(student));
 
@@ -360,7 +340,6 @@ const getNewStudents = async () => {
     NAUGHTY_LIST_HEADERS,
     naughtyListStudents,
   );
-  // TODO: Send naughty list emails
 
   if (eligibleNewStudents.length > 0) {
     console.info('Adding students to HRPTIV roster...');
