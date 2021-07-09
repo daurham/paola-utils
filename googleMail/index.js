@@ -30,7 +30,7 @@ const getDraftBySubject = async (subjectQuery) => {
   const service = await authenticate();
   const allDrafts = await service.users.drafts.list({
     userId: 'me',
-    q: `subject:${subjectQuery}`,
+    q: `subject:"${subjectQuery}"`,
   });
 
   // method should error if exactly one draft was not returned
@@ -59,10 +59,9 @@ const populateMergeFields = (body, subject, mergeFields) => {
   validateMergeFields(body, subject, mergeFields);
   let mergedBody = body;
   let mergedSubject = subject;
-  Object.entries(mergeFields).map((obj) => {
-    mergedBody = mergedBody.replace(`{{${obj[0]}}}`, `${obj[1]}`);
-    mergedSubject = mergedSubject.replace(`{{${obj[0]}}}`, `${obj[1]}`);
-    return { mergedBody, mergedSubject };
+  Object.entries(mergeFields).forEach((obj) => {
+    mergedBody = mergedBody.replace(`{{${obj[0]}}}`, obj[1]);
+    mergedSubject = mergedSubject.replace(`{{${obj[0]}}}`, obj[1]);
   });
   return { mergedBody, mergedSubject };
 };
@@ -80,7 +79,7 @@ const generateEmail = (body, subject, toList, ccList, bccList, alias, mergeField
     'MIME-Version: 1.0',
     `Subject: ${utf8Subject}`,
     '',
-    `${mergedBody}`,
+    mergedBody,
   ];
   const message = messageParts.join('\n');
   const encodedMessage = Buffer.from(message)
