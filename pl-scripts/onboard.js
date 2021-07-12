@@ -97,7 +97,7 @@ if (
   (currentCohortWeek === 4 && currentDate.getUTCDay() > 5 && currentDate.getUTCHours() > 0)
 ) {
   console.error(`Cohort week out of range (${currentCohortWeek}), exiting`);
-  process.exit(1);
+  process.exit(0);
 }
 
 const googleGroupFullTime = `seipw${currentCohortWeek}@galvanize.com`;
