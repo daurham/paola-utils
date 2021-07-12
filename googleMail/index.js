@@ -2,11 +2,17 @@
 // GMail API Integrations
 // ------------------------------
 
+require('dotenv').config();
 const { google } = require('googleapis');
-const key = require('../../google/gmail_client_secret.json');
 
 const scopes = ['https://mail.google.com/'];
-const jwt = new google.auth.JWT(key.client_email, null, key.private_key, scopes, 'paola@galvanize.com');
+const jwt = new google.auth.JWT(
+  process.env.GMAIL_CLIENT_EMAIL,
+  null,
+  process.env.GMAIL_PRIVATE_KEY,
+  scopes,
+  'paola@galvanize.com',
+);
 
 const authenticate = async () => {
   await jwt.authorize((err, token) => {
@@ -19,12 +25,17 @@ const authenticate = async () => {
   );
 };
 
+const DRAFT_CACHE = {};
 const getDraftBySubject = async (subjectQuery) => {
+  if (DRAFT_CACHE[subjectQuery]) {
+    return DRAFT_CACHE[subjectQuery];
+  }
+
   // get draft from query keyword
   const service = await authenticate();
   const allDrafts = await service.users.drafts.list({
     userId: 'me',
-    q: `subject:${subjectQuery}`,
+    q: `subject:"${subjectQuery}"`,
   });
 
   // method should error if exactly one draft was not returned
@@ -39,6 +50,8 @@ const getDraftBySubject = async (subjectQuery) => {
     id: allDrafts.data.drafts[0].id,
     format: 'full',
   });
+  
+  DRAFT_CACHE[subjectQuery] = draft.data;
   return draft.data;
 };
 
@@ -53,10 +66,9 @@ const populateMergeFields = (body, subject, mergeFields) => {
   validateMergeFields(body, subject, mergeFields);
   let mergedBody = body;
   let mergedSubject = subject;
-  Object.entries(mergeFields).map((obj) => {
-    mergedBody = mergedBody.replace(`{{${obj[0]}}}`, `${obj[1]}`);
-    mergedSubject = mergedSubject.replace(`{{${obj[0]}}}`, `${obj[1]}`);
-    return { mergedBody, mergedSubject };
+  Object.entries(mergeFields).forEach((obj) => {
+    mergedBody = mergedBody.replace(`{{${obj[0]}}}`, obj[1]);
+    mergedSubject = mergedSubject.replace(`{{${obj[0]}}}`, obj[1]);
   });
   return { mergedBody, mergedSubject };
 };
@@ -74,7 +86,7 @@ const generateEmail = (body, subject, toList, ccList, bccList, alias, mergeField
     'MIME-Version: 1.0',
     `Subject: ${utf8Subject}`,
     '',
-    `${mergedBody}`,
+    mergedBody,
   ];
   const message = messageParts.join('\n');
   const encodedMessage = Buffer.from(message)

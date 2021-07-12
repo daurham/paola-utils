@@ -1,11 +1,14 @@
 const fetch = require('node-fetch');
 const { GITHUB_API_USERS, GITHUB_API_TEAMS } = require('../constants');
 
-// ------------------------------
-// GitHub API Integrations
-// ------------------------------
+const headers = { Authorization: `token ${process.env.GIT_AUTH_TOKEN}` };
 
-const headers = { Authorization: `token ${process.env.GITHUB_ACCESS_TOKEN}` };
+function gitHubAPIRequest(endpoint, method, body) {
+  return fetch(
+    `https://api.github.com/${endpoint}`,
+    { method, body: typeof body === 'string' ? body : JSON.stringify(body), headers },
+  ).then((res) => res.json());
+}
 
 // Validate a github username exists
 exports.validateUser = async (username) => {
@@ -17,6 +20,43 @@ exports.validateUser = async (username) => {
     return response.status === 200;
   } catch (error) {
     return error;
+  }
+};
+
+exports.createTeam = async (teamName) => {
+  try {
+    const data = {
+      name: teamName,
+      // privacy: 'secret',
+      privacy: 'closed',
+    };
+    const response = await fetch(
+      GITHUB_API_TEAMS,
+      { method: 'POST', headers, body: JSON.stringify(data) },
+    );
+    const res = await response.json();
+    if (res.errors) throw new Error(res.errors[0].message);
+    return response.status === 201;
+  } catch (error) {
+    return error.message;
+  }
+};
+
+exports.deleteTeam = async (teamName) => {
+  try {
+    const data = {
+      name: teamName,
+      // privacy: 'secret',
+    };
+    const response = await fetch(
+      GITHUB_API_TEAMS,
+      { method: 'DELETE', headers, body: JSON.stringify(data) },
+    );
+    const res = await response.json();
+    if (res.errors) throw new Error(res.errors[0].message);
+    return response.status === 200;
+  } catch (error) {
+    return error.message;
   }
 };
 
@@ -97,4 +137,16 @@ exports.removeUsersFromTeam = async (usernames, team) => {
   } catch (error) {
     return error.message;
   }
+};
+
+// Create Branch
+exports.createBranches = async (accountName, repoName, branchNames) => {
+  const commitHash = (await gitHubAPIRequest(`repos/${accountName}/${repoName}/git/ref/heads/master`)).object.sha;
+  const promises = branchNames.map((branchName) => gitHubAPIRequest(
+    `repos/${accountName}/${repoName}/git/refs`,
+    'POST',
+    { ref: `refs/heads/${branchName}`, sha: commitHash },
+  ));
+  const result = await Promise.all(promises);
+  return result.every((res) => res.ref);
 };

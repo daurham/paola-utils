@@ -13,7 +13,7 @@ const {
 const GITHUB_TEAM_USERNAME = 'paola-test-team';
 const GITHUB_TEST_USER = 'murphpaolatestuser';
 const GITHUB_INVALID_USER = 'notarealuser***';
-const HEADERS = { Authorization: `token ${process.env.GITHUB_ACCESS_TOKEN}` };
+const HEADERS = { Authorization: `token ${process.env.GIT_AUTH_TOKEN}` };
 
 const addUser = async () => {
   await fetch(

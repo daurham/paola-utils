@@ -4,7 +4,13 @@
 const { google } = require('googleapis');
 
 const scopes = ['https://www.googleapis.com/auth/admin.directory.group'];
-const jwt = new google.auth.JWT(process.env.GOOGLE_ADMIN_CLIENT_EMAIL, null, process.env.GOOGLE_ADMIN_CLIENT_KEY, scopes, 'paola@galvanize.com');
+const jwt = new google.auth.JWT(
+  process.env.GOOGLE_GROUPS_CLIENT_EMAIL,
+  null,
+  process.env.GOOGLE_GROUPS_PRIVATE_KEY.replace(/\\n/gm, '\n'),
+  scopes,
+  'paola@galvanize.com',
+);
 
 const authenticate = async () => {
   await jwt.authorize((err, token) => {
