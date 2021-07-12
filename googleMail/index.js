@@ -25,7 +25,12 @@ const authenticate = async () => {
   );
 };
 
+const DRAFT_CACHE = {};
 const getDraftBySubject = async (subjectQuery) => {
+  if (DRAFT_CACHE[subjectQuery]) {
+    return DRAFT_CACHE[subjectQuery];
+  }
+
   // get draft from query keyword
   const service = await authenticate();
   const allDrafts = await service.users.drafts.list({
@@ -45,6 +50,8 @@ const getDraftBySubject = async (subjectQuery) => {
     id: allDrafts.data.drafts[0].id,
     format: 'full',
   });
+  
+  DRAFT_CACHE[subjectQuery] = draft.data;
   return draft.data;
 };
 
