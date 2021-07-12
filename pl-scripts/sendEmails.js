@@ -1,4 +1,4 @@
-/* eslint-disable no-restricted-syntax, no-await-in-loop */
+/* eslint-disable no-restricted-syntax, no-await-in-loop, no-console */
 require('dotenv').config();
 const { slackAPIRequest } = require('../slack');
 const Bottleneck = require('bottleneck');
@@ -19,9 +19,14 @@ const { sendEmailFromDraft } = require('../googleMail');
 const { getNewStudentsFromSFDC, hasIntakeFormCompleted } = require('./getNewStudentsFromSFDC');
 const techMentors = require('../tech-mentors');
 
+const NO_FORK_TEXT = 'No Fork';
+const ERROR_TEXT = 'Timed Out';
+const TIMED_OUT_TEXT = 'Timed Out';
+const MESSAGE_NO_FORKS = 'According to our records, you haven\'t forked any of the assignment repositories.';
+
 const rateLimiter = new Bottleneck({
   maxConcurrent: 3,
-  minTime: 400,
+  minTime: 500,
 });
 const sendEmailFromDraftRL = rateLimiter.wrap(sendEmailFromDraft);
 
@@ -97,120 +102,195 @@ async function getMissedDeadlineStudents(moduleNumber) {
   }));
 }
 
+function getProjectCompletionMessage(projectName, repoCompletionValue, isComplete) {
+  /* eslint-disable no-else-return */
+  if (repoCompletionValue === NO_FORK_TEXT) {
+    return `${projectName} has not been forked`;
+  } else if (repoCompletionValue === TIMED_OUT_TEXT) {
+    return `${projectName} is <b>timing out</b> (taking more than 30 seconds to execute)`;
+  } else if (repoCompletionValue === ERROR_TEXT) {
+    return `${projectName} is throwing an error`;
+  } else if (isComplete) {
+    return `${projectName} is complete ✅`;
+  }
+  return `${projectName} is <b>not complete</b> ❌`;
+
+  /* eslint-enable no-else-return */
+}
+
+function getMissedDeadlineDetails(student, projects) {
+  if (projects.every(([projectName, projectValue]) => projectValue === NO_FORK_TEXT)) {
+    return MESSAGE_NO_FORKS;
+  }
+
+  const messages = projects.map((project) => getProjectCompletionMessage(...project));
+  if (messages.length > 1) {
+    messages[messages.length - 1] = `and ${messages[messages.length - 1]}`;
+  }
+  return `According to our records, ${messages.join(', ')}.`;
+}
+
+function getModule1MissDetails(student) {
+  return getMissedDeadlineDetails(student, [
+    ['JavaScript Koans', student.javascriptKoans, student.koansMinReqs === 'Yes'],
+    ['Testbuilder', student.testbuilder, Number(student.testbuilder) >= 3323 && Number(student.testbuilder) < 3330],
+    ['Underbar Part 1', student.underbarPartOne, Number(student.underbar) >= 55],
+  ]);
+}
+
+function getModule2MissDetails(student) {
+  return getMissedDeadlineDetails(student, [
+    ['Underbar Part 2', student.underbarPartTwo, Number(student.underbarPartTwo) >= 58],
+    ['Twiddler', student.twiddler, Number(student.twiddler) >= 3.5],
+  ]);
+}
+
+function getModule3MissDetails(student) {
+  return getMissedDeadlineDetails(student, [
+    ['Recursion', student.recursion, Number(student.recursion) >= 2],
+  ]);
+}
+
 const formatName = (name) => name.toLowerCase().split(' ').map((part) => part.replace(/^(.)/, (char) => char.toUpperCase())).join(' ');
 const numDaysAgo = (dateString) => Math.floor(
   (new Date() - new Date(dateString)) / (1000 * 60 * 60 * 24),
 );
+
 const EMAILS = [{
-//   key: 'studentInfoFormReminder',
-//   draftName: '[Action Required] Student Info Form Submission',
-//   async getEmails() {
-//     const newStudents = await getNewStudentsFromSFDC();
-//     const naughtyList = newStudents
-//       .filter((student) => !hasIntakeFormCompleted(student));
-//     return naughtyList.map((student) => ({
-//       email: student.email,
-//       fields: {
-//         formURL: `www.tfaforms.com/369587?tfa_57=${student.sfdcContactId}`,
-//       },
-//     }));
-//   },
-// }, {
-//   key: 'joinSlackReminder',
-//   draftName: '[Action Required] SEI Precourse Slack',
-//   async getEmails() {
-//     const students = await getMissingSlackUsers();
-//     const staleStudents = students.filter((s) => numDaysAgo(s.dateAddedToPrecourse) > 2);
-//     return staleStudents.map((student) => ({
-//       email: student.email,
-//       fields: {
-//         name: formatName(student.preferredFirstName),
-//         slackJoinURL: 'join.slack.com/t/sei-opr/shared_invite/zt-n8sr33fp-WgI39v3Ev0EhW1ixyws1_w',
-//       },
-//     }));
-//   },
-// }, {
+  key: 'studentInfoFormReminder',
+  draftName: '[Action Required] Student Info Form Submission',
+  async getEmails() {
+    const newStudents = await getNewStudentsFromSFDC();
+    const naughtyList = newStudents
+      .filter((student) => !hasIntakeFormCompleted(student));
+    return naughtyList.map((student) => ({
+      email: student.email,
+      fields: {
+        formURL: `www.tfaforms.com/369587?tfa_57=${student.sfdcContactId}`,
+      },
+    }));
+  },
+}, {
+  key: 'joinSlackReminder',
+  draftName: '[Action Required] SEI Precourse Slack',
+  async getEmails() {
+    const students = await getMissingSlackUsers();
+    const staleStudents = students.filter((s) => numDaysAgo(s.dateAddedToPrecourse) > 2);
+    return staleStudents.map((student) => ({
+      email: student.email,
+      fields: {
+        name: formatName(student.preferredFirstName),
+        slackJoinURL: 'join.slack.com/t/sei-opr/shared_invite/zt-n8sr33fp-WgI39v3Ev0EhW1ixyws1_w',
+      },
+    }));
+  },
+}, {
   key: 'missedSoftDeadline1',
-  draftName: 'SEI Precourse - Module 1 Soft Deadline Missed', // TODO
+  draftName: 'SEI Precourse - Module 1 Soft Deadline Missed',
   async getEmails() {
     const students = await getMissedDeadlineStudents(1);
     return students.map((student) => ({
       email: student.email,
-      techMentor: student.techMentor,
-      fullName: student.fullName,
       fields: {
         name: formatName(student.preferredFirstName),
         deadlineDate: getDeadline(student, 1),
+        details: getModule1MissDetails(student),
       },
     }));
   },
 }, {
   key: 'missedSoftDeadline2',
-  draftName: 'SEI Precourse - Module 2 Soft Deadline Missed', // TODO
+  draftName: 'SEI Precourse - Module 2 Soft Deadline Missed',
   async getEmails() {
     const students = await getMissedDeadlineStudents(2);
     return students.map((student) => ({
       email: student.email,
-      techMentor: student.techMentor,
-      fullName: student.fullName,
       fields: {
         name: formatName(student.preferredFirstName),
         deadlineDate: getDeadline(student, 2),
+        details: getModule2MissDetails(student),
       },
     }));
   },
 }, {
   key: 'missedSoftDeadline3',
-  draftName: 'SEI Precourse - Module 3 Soft Deadline Missed', // TODO
+  draftName: 'SEI Precourse - Module 3 Soft Deadline Missed',
   async getEmails() {
     const students = await getMissedDeadlineStudents(3);
     return students.map((student) => ({
       email: student.email,
-      techMentor: student.techMentor,
-      fullName: student.fullName,
       fields: {
         name: formatName(student.preferredFirstName),
         deadlineDate: getDeadline(student, 3),
+        details: getModule3MissDetails(student),
       },
     }));
   },
 }];
 
+// TODO: This is pretty nasty. Parameterize for CLI usage?
+const OVERRIDE_EMAIL_RECIPIENT = null;// 'daniel.rouse@galvanize.com';
+const SEND_SINGLE_EMAIL_ONLY = false;// true;
+const CLEAR_CACHE = false;
+const SEND_EMAILS = true;
+
 (async () => {
   // change to pulse doc instead of hrptiv
   const docPulse = await loadGoogleSpreadsheet(DOC_ID_PULSE);
   for (const { key, draftName, getEmails } of EMAILS) {
+    // if (key !== 'studentInfoFormReminder') continue;
+
     console.info(`Checking for ${draftName}...`);
-    // await deleteSheetMetadata(docPulse, key);
+    if (CLEAR_CACHE) {
+      console.info('Clearing list of sent emails...');
+      await deleteSheetMetadata(docPulse, key);
+    }
 
     const sheetMetadata = (await getSheetMetadata(docPulse, key)) || '';
     const sentEmails = sheetMetadata.split(',');
-    const unfilteredEmails = await getEmails();
-    const filteredEmails = unfilteredEmails.filter(({ email }) => !sentEmails.includes(email));
-    // filteredEmails = filteredEmails.map(s => ({ ...s, email: 'daniel.rouse@galvanize.com' }));
-    // if (!filteredEmails.length) continue;
-    // filteredEmails = [filteredEmails[0]];
-    // filteredEmails[0].email = 'daniel.rouse@galvanize.com';
+    const allRecipients = await getEmails();
+    const filteredRecipients = allRecipients.filter(({ email }) => !sentEmails.includes(email));
+    filteredRecipients.forEach(({ email }) => console.info('> ', email));
+    let recipients = filteredRecipients;
+    if (SEND_SINGLE_EMAIL_ONLY) {
+      if (filteredRecipients.length === 0) {
+        recipients = [{
+          email: OVERRIDE_EMAIL_RECIPIENT,
+          fields: {
+            name: 'Tchicphillait',
+            deadlineDate: '13/37',
+            formURL: 'formURL',
+            slackJoinURL: 'slackJoinURL',
+          },
+        }];
+      } else {
+        recipients = [filteredRecipients[0]];
+        recipients[0].email = OVERRIDE_EMAIL_RECIPIENT;
+      }
+    }
+
     await Promise.all(
-      filteredEmails.map(({ email, fields, techMentor, fullName }) => {
-        console.info(`${draftName}: ${techMentor}, ${fullName}, ${email}...`);
-        // return null;
-        return sendEmailFromDraftRL(
-          draftName,
-          email,
-          [],
-          [],
-          { name: 'SEI Precourse', email: 'sei.precourse@galvanize.com' },
-          fields,
-        );
+      recipients.map(({ email, fields }) => {
+        console.info(`Sending "${draftName} to "${email}"`);
+        console.log(fields.details);
+        if (SEND_EMAILS) {
+          return sendEmailFromDraftRL(
+            draftName,
+            OVERRIDE_EMAIL_RECIPIENT || email,
+            [],
+            [],
+            { name: 'SEI Precourse', email: 'sei.precourse@galvanize.com' },
+            fields,
+          );
+        }
+        return null;
       }),
     );
-    await upsertSheetMetadata(docPulse, key, filteredEmails.map(({ email }) => email).join(','));
-  }
 
-  // cache manually populated EOD 7/6/21
-  // plan for test run weds 7/7:
-  // comment out upsert line and run for new results Weds morning
-  // test sending soft deadline missed emails to self
-  // confirm email addresses, uncomment upsert line and run
+    // only update cache if using real data
+    if (!OVERRIDE_EMAIL_RECIPIENT && !SEND_SINGLE_EMAIL_ONLY && SEND_EMAILS) {
+      console.info('Updating list of sent emails...');
+      await upsertSheetMetadata(docPulse, key, allRecipients.map(({ email }) => email).join(','));
+    }
+  }
 })();
