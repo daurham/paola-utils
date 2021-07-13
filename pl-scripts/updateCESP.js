@@ -77,22 +77,23 @@ const formatStudentsForCESPModuleCompletionSheet = (students) => students.map((s
   'All Complete': student.allComplete,
 }));
 
+const filterAndSortStudents = (students) => students
+  .filter((student) => student.fullName)
+  .sort(sortStudentsByFullName)
+  .sort(sortStudentsByDateAdded)
+  .sort(sortStudentsByCampus);
+
 (async () => {
   console.info('Retrieving roster from Pulse...');
   const pulseSheet = await loadGoogleSpreadsheet(DOC_ID_PULSE);
   const studentsFromRepoCompletion = await Promise.all(
     techMentors.map((techMentor) => getRows(
       pulseSheet.sheetsById[techMentor.repoCompletionSheetID],
-    )).concat(
-      getRows(pulseSheet.sheetsByTitle['Separated Repo Completion']),
-    ),
+    )),
   );
-  const students = studentsFromRepoCompletion
-    .flat()
-    .filter((student) => student.fullName)
-    .sort(sortStudentsByFullName)
-    .sort(sortStudentsByDateAdded)
-    .sort(sortStudentsByCampus);
+  const studentsFromSeparatedRepoCompletion = await getRows(pulseSheet.sheetsByTitle['Separated Repo Completion']);
+  const students = filterAndSortStudents(studentsFromRepoCompletion.flat())
+    .concat(filterAndSortStudents(studentsFromSeparatedRepoCompletion));
   const separations = await getRows(pulseSheet.sheetsByTitle['Separation Tracker']);
   const activeStudents = students.filter((student) => !separations.find(
     (separatedStudent) => separatedStudent.fullName === student.fullName,
