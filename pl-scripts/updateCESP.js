@@ -49,7 +49,7 @@ const sortStudentsByCampus = (a, b) =>
 const sortStudentsByDateAdded = (a, b) =>
   a.dateAdded.toLowerCase().localeCompare(b.dateAdded.toLowerCase());
 
-const formatStudentsForCESPRosterSheet = (students) => students.map((student) => ({
+const formatStudentsForCESPRosterSheet = (students, separations) => students.map((student) => ({
   'Full Name': student.fullName,
   'Campus': student.campus,
   'GitHub': student.githubHandle,
@@ -62,7 +62,7 @@ const formatStudentsForCESPRosterSheet = (students) => students.map((student) =>
   'Precourse Attempts': student.numPrecourseEnrollments,
   'Tech Mentor': student.techMentor,
   'Precourse Complete': student.allComplete,
-  'Status': 'Enrolled',
+  'Status': (separations.find((separatedStudent) => separatedStudent.fullName === student.fullName) || { separationType: 'Enrolled' }).separationType,
 }));
 const formatStudentsForCESPModuleCompletionSheet = (students) => students.map((student) => ({
   'Full Name': student.fullName,
@@ -83,7 +83,9 @@ const formatStudentsForCESPModuleCompletionSheet = (students) => students.map((s
   const studentsFromRepoCompletion = await Promise.all(
     techMentors.map((techMentor) => getRows(
       pulseSheet.sheetsById[techMentor.repoCompletionSheetID],
-    )),
+    )).concat(
+      getRows(pulseSheet.sheetsByTitle['Separated Repo Completion']),
+    ),
   );
   const students = studentsFromRepoCompletion
     .flat()
@@ -91,8 +93,13 @@ const formatStudentsForCESPModuleCompletionSheet = (students) => students.map((s
     .sort(sortStudentsByFullName)
     .sort(sortStudentsByDateAdded)
     .sort(sortStudentsByCampus);
-  const roster = formatStudentsForCESPRosterSheet(students);
-  const moduleCompletion = formatStudentsForCESPModuleCompletionSheet(students);
+  const separations = await getRows(pulseSheet.sheetsByTitle['Separation Tracker']);
+  const activeStudents = students.filter((student) => !separations.find(
+    (separatedStudent) => separatedStudent.fullName === student.fullName,
+  ));
+
+  const roster = formatStudentsForCESPRosterSheet(students, separations);
+  const moduleCompletion = formatStudentsForCESPModuleCompletionSheet(activeStudents);
 
   console.info(`Adding ${students.length} students to CES&P roster.`);
 
