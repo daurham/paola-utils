@@ -49,7 +49,7 @@ const sortStudentsByCampus = (a, b) =>
 const sortStudentsByDateAdded = (a, b) =>
   a.dateAdded.toLowerCase().localeCompare(b.dateAdded.toLowerCase());
 
-const formatStudentsForCESPRosterSheet = (students) => students.map((student) => ({
+const formatStudentsForCESPRosterSheet = (students, separations) => students.map((student) => ({
   'Full Name': student.fullName,
   'Campus': student.campus,
   'GitHub': student.githubHandle,
@@ -62,7 +62,7 @@ const formatStudentsForCESPRosterSheet = (students) => students.map((student) =>
   'Precourse Attempts': student.numPrecourseEnrollments,
   'Tech Mentor': student.techMentor,
   'Precourse Complete': student.allComplete,
-  'Status': 'Enrolled',
+  'Status': (separations.find((separatedStudent) => separatedStudent.fullName === student.fullName) || { separationType: 'Enrolled' }).separationType,
 }));
 const formatStudentsForCESPModuleCompletionSheet = (students) => students.map((student) => ({
   'Full Name': student.fullName,
@@ -77,6 +77,12 @@ const formatStudentsForCESPModuleCompletionSheet = (students) => students.map((s
   'All Complete': student.allComplete,
 }));
 
+const filterAndSortStudents = (students) => students
+  .filter((student) => student.fullName)
+  .sort(sortStudentsByFullName)
+  .sort(sortStudentsByDateAdded)
+  .sort(sortStudentsByCampus);
+
 (async () => {
   console.info('Retrieving roster from Pulse...');
   const pulseSheet = await loadGoogleSpreadsheet(DOC_ID_PULSE);
@@ -85,14 +91,16 @@ const formatStudentsForCESPModuleCompletionSheet = (students) => students.map((s
       pulseSheet.sheetsById[techMentor.repoCompletionSheetID],
     )),
   );
-  const students = studentsFromRepoCompletion
-    .flat()
-    .filter((student) => student.fullName)
-    .sort(sortStudentsByFullName)
-    .sort(sortStudentsByDateAdded)
-    .sort(sortStudentsByCampus);
-  const roster = formatStudentsForCESPRosterSheet(students);
-  const moduleCompletion = formatStudentsForCESPModuleCompletionSheet(students);
+  const studentsFromSeparatedRepoCompletion = await getRows(pulseSheet.sheetsByTitle['Separated Repo Completion']);
+  const students = filterAndSortStudents(studentsFromRepoCompletion.flat())
+    .concat(filterAndSortStudents(studentsFromSeparatedRepoCompletion));
+  const separations = await getRows(pulseSheet.sheetsByTitle['Separation Tracker']);
+  const activeStudents = students.filter((student) => !separations.find(
+    (separatedStudent) => separatedStudent.fullName === student.fullName,
+  ));
+
+  const roster = formatStudentsForCESPRosterSheet(students, separations);
+  const moduleCompletion = formatStudentsForCESPModuleCompletionSheet(activeStudents);
 
   console.info(`Adding ${students.length} students to CES&P roster.`);
 
