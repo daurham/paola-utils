@@ -1,13 +1,14 @@
 /* eslint-disable no-restricted-syntax, no-await-in-loop, no-console */
 require('dotenv').config();
-const { slackAPIRequest } = require('../slack');
 const Bottleneck = require('bottleneck');
+const { slackAPIRequest } = require('../slack');
 const {
   DOC_ID_HRPTIV,
   SHEET_ID_HRPTIV_ROSTER,
   DOC_ID_PULSE,
   DEADLINES_FULL_TIME,
   DEADLINES_PART_TIME,
+  LEARN_COHORT_ID,
 } = require('../constants');
 const {
   loadGoogleSpreadsheet,
@@ -134,7 +135,7 @@ function getModule1MissDetails(student) {
   return getMissedDeadlineDetails(student, [
     ['JavaScript Koans', student.javascriptKoans, student.koansMinReqs === 'Yes'],
     ['Testbuilder', student.testbuilder, Number(student.testbuilder) >= 3323 && Number(student.testbuilder) < 3330],
-    ['Underbar Part 1', student.underbarPartOne, Number(student.underbar) >= 55],
+    ['Underbar Part 1', student.underbarPartOne, Number(student.underbarPartOne) >= 55],
   ]);
 }
 
@@ -195,6 +196,8 @@ const EMAILS = [{
         name: formatName(student.preferredFirstName),
         deadlineDate: getDeadline(student, 1),
         details: getModule1MissDetails(student),
+        learnCohortId1: LEARN_COHORT_ID,
+        learnCohortId2: LEARN_COHORT_ID,
       },
     }));
   },
@@ -209,6 +212,8 @@ const EMAILS = [{
         name: formatName(student.preferredFirstName),
         deadlineDate: getDeadline(student, 2),
         details: getModule2MissDetails(student),
+        learnCohortId1: LEARN_COHORT_ID,
+        learnCohortId2: LEARN_COHORT_ID,
       },
     }));
   },
@@ -223,6 +228,8 @@ const EMAILS = [{
         name: formatName(student.preferredFirstName),
         deadlineDate: getDeadline(student, 3),
         details: getModule3MissDetails(student),
+        learnCohortId1: LEARN_COHORT_ID,
+        learnCohortId2: LEARN_COHORT_ID,
       },
     }));
   },
@@ -272,7 +279,6 @@ const SEND_EMAILS = true;
     await Promise.all(
       recipients.map(({ email, fields }) => {
         console.info(`Sending "${draftName} to "${email}"`);
-        console.log(fields.details);
         if (SEND_EMAILS) {
           return sendEmailFromDraftRL(
             draftName,
