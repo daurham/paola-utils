@@ -11,7 +11,9 @@ const headers = {
 // ------------------------------
 
 // Read all students in a cohort
-exports.getAllStudentsInCohort = async (cohortId) => {
+let cachedStudents;
+exports.getAllStudentsInCohort = async (cohortId, force) => {
+  if (cachedStudents && !force) return cachedStudents;
   try {
     const response = await fetch(
       `${LEARN_API_COHORTS}/${cohortId}/users`,
@@ -19,7 +21,8 @@ exports.getAllStudentsInCohort = async (cohortId) => {
     );
     const json = await response.json();
     if (json.error || json.message) throw new Error(json.error || json.message);
-    return json;
+    cachedStudents = json;
+    return cachedStudents;
   } catch (error) {
     return error.message;
   }
@@ -81,7 +84,7 @@ exports.removeStudentFromCohort = async (cohortId, email) => {
     if (json.error || json.message) throw new Error(json.error || json.message);
     return json.status;
   } catch (error) {
-    return error.message;
+    return `Error removing ${email} from Learn cohort: ${error.message}`;
   }
 };
 
