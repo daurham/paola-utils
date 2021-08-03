@@ -140,12 +140,23 @@ exports.removeUsersFromTeam = async (usernames, team) => {
 };
 
 // Create Branch
+const createBranchHashCache = {};
+const Bottleneck = require('bottleneck');
+const rateLimiter = new Bottleneck({
+  maxConcurrent: 3,
+  minTime: 333,
+});
+const rateLimitedAPIRequest = rateLimiter.wrap(gitHubAPIRequest);
 exports.createBranches = async (accountName, repoName, branchNames) => {
-  const commitHash = (await gitHubAPIRequest(`repos/${accountName}/${repoName}/git/ref/heads/master`)).object.sha;
-  const promises = branchNames.map((branchName) => gitHubAPIRequest(
+  const cacheKey = accountName + repoName;
+  if (!createBranchHashCache.hasOwnProperty(cacheKey)) {
+    const response = await rateLimitedAPIRequest(`repos/${accountName}/${repoName}/git/ref/heads/master`);
+    createBranchHashCache[cacheKey] = response.object.sha;
+  }
+  const promises = branchNames.map((branchName) => rateLimitedAPIRequest(
     `repos/${accountName}/${repoName}/git/refs`,
     'POST',
-    { ref: `refs/heads/${branchName}`, sha: commitHash },
+    { ref: `refs/heads/${branchName}`, sha: createBranchHashCache[cacheKey] },
   ));
   const result = await Promise.all(promises);
   return result.every((res) => res.ref);
