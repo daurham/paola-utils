@@ -101,7 +101,9 @@ if (
 }
 
 const googleGroupFullTime = `seipw${currentCohortWeek}@galvanize.com`;
-const googleGroupPartTime = `seip-rpt-w${currentCohortWeek}@galvanize.com`;
+const googleGroupPartTime = currentCohortWeek <= 2
+  ? `seip-rpt-w${currentCohortWeek}@galvanize.com`
+  : `seip.rptw${currentCohortWeek}@galvanize.com`;
 const currentDeadlineGroup = `W${currentCohortWeek}`;
 
 const rateLimiter = new Bottleneck({
@@ -245,7 +247,9 @@ const sendEmailsToStudents = async (students) => {
       ccList,
       bccList,
       alias,
-      {},
+      {
+        cohortId: COHORT_ID,
+      },
     );
   }
 
