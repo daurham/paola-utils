@@ -1,7 +1,13 @@
 /* eslint-disable no-console */
 require('dotenv').config();
 const fetch = require('node-fetch');
+const Bottleneck = require('bottleneck');
 const { SLACK_TM_EMAILS } = require('../constants');
+// Limit to max of Tier 2 request rates (20 req/min)
+const rateLimiter = new Bottleneck({
+  maxConcurrent: 1,
+  minTime: 3000,
+});
 
 function slackAPIRequest(endpoint, method, body) {
   const headers = {
@@ -14,8 +20,10 @@ function slackAPIRequest(endpoint, method, body) {
   ).then((res) => res.json());
 }
 
+const rateLimitedAPIRequest = rateLimiter.wrap(slackAPIRequest);
+
 // Send a message to a channel
-const sendMessageToChannel = (channel, text) => slackAPIRequest(
+const sendMessageToChannel = (channel, text) => rateLimitedAPIRequest(
   'chat.postMessage',
   'POST',
   { channel, text },
@@ -33,25 +41,25 @@ const formatListOfNames = (nameList) => nameList.map((name) => {
   return `${nameArray[0].toLowerCase()}_${nameArray[nameArray.length - 1].toLowerCase()}`;
 });
 
-const createChannel = async (name) => slackAPIRequest(
+const createChannel = async (name) => rateLimitedAPIRequest(
   'conversations.create',
   'POST',
   { name, is_private: true },
 );
 
-const inviteUsersToChannel = async (channelID, userIDs) => slackAPIRequest(
+const inviteUsersToChannel = async (channelID, userIDs) => rateLimitedAPIRequest(
   'conversations.invite',
   'POST',
   { channel: channelID, is_private: true, users: userIDs },
 );
 
-const setChannelPurpose = async (channelID, purpose) => slackAPIRequest(
+const setChannelPurpose = async (channelID, purpose) => rateLimitedAPIRequest(
   'conversations.setPurpose',
   'POST',
   { channel: channelID, purpose },
 );
 
-const setChannelTopic = async (channelID, topic) => slackAPIRequest(
+const setChannelTopic = async (channelID, topic) => rateLimitedAPIRequest(
   'conversations.setTopic',
   'POST',
   { channel: channelID, topic },
@@ -66,35 +74,42 @@ const setChannelTopic = async (channelID, topic) => slackAPIRequest(
 //   'conversations.list',
 //   'GET',
 // );
+
+let cachedTechMentorUserIDs;
 const getTechMentorUserIDs = async () => {
-  const users = await slackAPIRequest('users.list', 'GET');
-  return users.members
-    .filter((user) => SLACK_TM_EMAILS.includes(user.profile.email))
-    .map((user) => user.id);
+  if (!cachedTechMentorUserIDs) {
+    const users = await rateLimitedAPIRequest('users.list', 'GET');
+    cachedTechMentorUserIDs = users.members
+      .filter((user) => SLACK_TM_EMAILS.includes(user.profile.email))
+      .map((user) => user.id);
+  }
+  return cachedTechMentorUserIDs;
 };
 
 const createChannelPerStudent = async (nameList) => {
   const formattedNames = formatListOfNames(nameList);
-  formattedNames.forEach(async (name) => {
-    const result = await createChannel(name);
-    if (!result.ok) {
-      console.warn('Failed to create channel for', name);
-      console.warn(result);
-      return;
-    }
-    console.info('Created channel', result.channel.id, 'for', name);
-    const purposeSet = await setChannelPurpose(
-      result.channel.id,
-      'This channel is where you will interact with the Precourse team regarding technical questions. '
-      + 'TMs will respond to help desk and reach out about your progress throughout the course.',
-    );
-    if (!purposeSet.ok) console.warn('Failed to set channel purpose', purposeSet);
-    const topicSet = await setChannelTopic(result.channel.id, 'Your personal channel with the Precourse Team.');
-    if (!topicSet.ok) console.warn('Failed to set channel topic', topicSet);
-    const techMentorUserIDs = await getTechMentorUserIDs();
-    const invited = await inviteUsersToChannel(result.channel.id, techMentorUserIDs);
-    if (!invited.ok) console.warn('Failed to invite users to channel', invited);
-  });
+  return Promise.all(
+    formattedNames.map(async (name) => {
+      const result = await createChannel(name); // Tier 2
+      if (!result.ok) {
+        console.warn('Failed to create channel for', name);
+        console.warn(result);
+        return;
+      }
+      console.info('Created channel', result.channel.id, 'for', name);
+      const purposeSet = await setChannelPurpose( // Tier 2
+        result.channel.id,
+        'This channel is where you will interact with the Precourse team regarding technical questions. '
+        + 'TMs will respond to help desk and reach out about your progress throughout the course.',
+      );
+      if (!purposeSet.ok) console.warn(result.channel.id, 'Failed to set channel purpose', purposeSet);
+      const topicSet = await setChannelTopic(result.channel.id, 'Your personal channel with the Precourse Team.'); // Tier 2
+      if (!topicSet.ok) console.warn(result.channel.id, 'Failed to set channel topic', topicSet);
+      const techMentorUserIDs = await getTechMentorUserIDs(); // Tier 2
+      const invited = await inviteUsersToChannel(result.channel.id, techMentorUserIDs); // Tier 3
+      if (!invited.ok) console.warn(result.channel.id, 'Failed to invite users to channel', invited);
+    }),
+  );
 };
 // const inviteNewTmsToChannels = async () => {}; // TODO?
 // const sendMessageViaDM = async () => {}; // TODO?
@@ -104,7 +119,7 @@ const createChannelPerStudent = async (nameList) => {
 // );
 
 module.exports = {
-  slackAPIRequest,
+  slackAPIRequest: rateLimitedAPIRequest,
 
   createChannelPerStudent,
   sendMessageToChannel,

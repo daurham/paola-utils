@@ -304,7 +304,7 @@ const sendInternalSlackMessage = async (newStudents, naughtyListStudents, pods) 
     ).join('\n');
   }
   if (slackMessage !== '') {
-    await sendMessageToChannel('staff-training', slackMessage);
+    await sendMessageToChannel('new-students', slackMessage);
   }
 };
 
