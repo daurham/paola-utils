@@ -116,7 +116,7 @@ const addStudentToGroupRL = rateLimiter.wrap(addStudentToGroup);
 const isFullTime = (student) => student.campus !== 'RPT Pacific';
 const isPartTime = (student) => !isFullTime(student);
 
-const formatStudentForRepoCompletion = (student, techMentor) => ({
+const formatStudentForRepoCompletion = (student, techMentor, rowIndex) => ({
   fullName: student.fullName,
   campus: student.campus,
   githubHandle: student.githubHandle,
@@ -126,11 +126,15 @@ const formatStudentForRepoCompletion = (student, techMentor) => ({
   techMentor,
   // VBAFundingType: student.VBAFundingType,
   // TODO: Maybe handle setting these to the proper formulas?
-  prepType: 'FILL_ME_IN', // student.selfReportedPrepartion,
+  prepType: `=VLOOKUP(A${rowIndex},HRPTIV!A:BC,50,false)`, // student.selfReportedPrepartion,
   // NB: for this column to work on each new cohort,
   // the iferror in the formula has to be unwrapped to allow access
-  hadLaserCoaching: 'FILL_ME_IN',
-  numPrecourseEnrollments: 'FILL_ME_IN',
+  hadLaserCoaching: `=IF(EQ(IFERROR(vlookup(A${rowIndex},` +
+                    `IMPORTRANGE("https://docs.google.com/spreadsheets/d/1v3ve2aYtO6MsG6Zjp-SBX-ote6JdWVvuYekHUst2wWw","Laser Coached Students Enrolled!A2:A"),1,false),` +
+                    `"No"), A${rowIndex}), "Yes", "No")`,
+  numPrecourseEnrollments: `=MAX(COUNTIF('Precourse Enrollments Archive'!B:B,A${rowIndex}),` +
+                           `COUNTIF('Precourse Enrollments Archive'!D:D,C${rowIndex}),` +
+                           `COUNTIF('Precourse Enrollments Archive'!G:G,F${rowIndex})) + 1`,
   koansMinReqs: 'No Fork',
   javascriptKoans: 'No Fork',
   testbuilder: 'No Fork',
@@ -138,14 +142,14 @@ const formatStudentForRepoCompletion = (student, techMentor) => ({
   underbarPartTwo: 'No Fork',
   twiddler: 'No Fork',
   recursion: 'No Fork',
-  partOneComplete: 'FILL_ME_IN',
-  partTwoComplete: 'FILL_ME_IN',
-  partThreeComplete: 'FILL_ME_IN',
-  allComplete: 'FILL_ME_IN',
+  partOneComplete: `=IF(AND(L${rowIndex}="Yes", M${rowIndex}>=26, N${rowIndex}>=3323, N${rowIndex}<=3329, O${rowIndex}=61), "Yes", "No")`,
+  partTwoComplete: `=IF(AND(P${rowIndex}=63, Q${rowIndex}>=3.5, ISNUMBER(Q${rowIndex})), "Yes", "No")`,
+  partThreeComplete: `=IF(AND(R${rowIndex}>=2, ISNUMBER(R${rowIndex})),"Yes", "No")`,
+  allComplete: `=IF(AND(S${rowIndex}="Yes",T${rowIndex}="Yes",U${rowIndex}="Yes"),"Yes","No")`,
   // onTimeKoansPR: student.onTimeKoansPR,
   // onTimeTestbuilderPR: student.onTimeTestbuilderPR,
   // onTimeUnderbarOnePR: student.onTimeUnderbarOnePR,
-  // onTimeTwiddlerPR: student.onTimeTwiddlerPR,
+  onTimeTwiddlerPR: 'No Fork',
   // onTimeRecursionPR: student.onTimeRecursionPR,
   // notes: student.notes,
 });
@@ -175,7 +179,7 @@ const assignStudentsToPods = async (pulseDoc, students) => {
     console.info(`Assigning ${student.fullName} to ${pod.name}'s pod`);
 
     pod.podSize += 1;
-    pod.repoCompletionRowsToAdd.push(formatStudentForRepoCompletion(student, pod.name));
+    pod.repoCompletionRowsToAdd.push(formatStudentForRepoCompletion(student, pod.name, pod.podSize + 1));
   });
 
   return techMentorsWithPodSize;
