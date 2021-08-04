@@ -68,6 +68,7 @@ const populateMergeFields = (body, subject, mergeFields) => {
   let mergedSubject = subject;
   Object.entries(mergeFields).forEach((obj) => {
     mergedBody = mergedBody.replace(`{{${obj[0]}}}`, obj[1]);
+    mergedBody = mergedBody.replace(encodeURIComponent(`{{${obj[0]}}}`), obj[1]);
     mergedSubject = mergedSubject.replace(`{{${obj[0]}}}`, obj[1]);
   });
   return { mergedBody, mergedSubject };
