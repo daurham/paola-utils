@@ -25,6 +25,14 @@ const ERROR_TEXT = 'Timed Out';
 const TIMED_OUT_TEXT = 'Timed Out';
 const MESSAGE_NO_FORKS = 'According to our records, you haven\'t forked any of the assignment repositories.';
 
+const MERGE_FIELD_STUDENT_INFO_FORM_URL = 'www.tfaforms.com/369587?tfa_57=';
+const MERGE_FIELD_SLACK_JOIN_URL = 'join.slack.com/t/hrseip/shared_invite/zt-u5go0u3k-9H_2XJZLp8JwSfvyhMNeRQ';
+// Workspace 2
+// const MERGE_FIELD_SLACK_JOIN_URL = 'join.slack.com/t/sei-opr/shared_invite/zt-n8sr33fp-WgI39v3Ev0EhW1ixyws1_w';
+
+const EMAIL_SENDER_NAME = 'SEI Precourse';
+const EMAIL_SENDER_ADDRESS = 'sei.precourse@galvanize.com';
+
 const rateLimiter = new Bottleneck({
   maxConcurrent: 3,
   minTime: 500,
@@ -167,7 +175,7 @@ const EMAILS = [{
     return naughtyList.map((student) => ({
       email: student.email,
       fields: {
-        formURL: `www.tfaforms.com/369587?tfa_57=${student.sfdcContactId}`,
+        formURL: MERGE_FIELD_STUDENT_INFO_FORM_URL + student.sfdcContactId,
       },
     }));
   },
@@ -181,10 +189,7 @@ const EMAILS = [{
       email: student.email,
       fields: {
         name: formatName(student.preferredFirstName),
-        // Workspace 1
-        slackJoinURL: 'join.slack.com/t/hrseip/shared_invite/zt-u5go0u3k-9H_2XJZLp8JwSfvyhMNeRQ',
-        // Workspace 2
-        // slackJoinURL: 'join.slack.com/t/sei-opr/shared_invite/zt-n8sr33fp-WgI39v3Ev0EhW1ixyws1_w',
+        slackJoinURL: MERGE_FIELD_SLACK_JOIN_URL,
       },
     }));
   },
@@ -245,11 +250,8 @@ const CLEAR_CACHE = false;
 const SEND_EMAILS = true;
 
 (async () => {
-  // change to pulse doc instead of hrptiv
   const docPulse = await loadGoogleSpreadsheet(DOC_ID_PULSE);
   for (const { key, draftName, getEmails } of EMAILS) {
-    // if (key !== 'studentInfoFormReminder') continue;
-
     console.info(`Checking for ${draftName}...`);
     if (CLEAR_CACHE) {
       console.info('Clearing list of sent emails...');
@@ -271,6 +273,9 @@ const SEND_EMAILS = true;
             deadlineDate: '13/37',
             formURL: 'formURL',
             slackJoinURL: 'slackJoinURL',
+            learnCohortId1: 'learnCohortId1',
+            learnCohortId2: 'learnCohortId2',
+            details: 'foo bar baz',
           },
         }];
       } else {
@@ -286,9 +291,9 @@ const SEND_EMAILS = true;
           return sendEmailFromDraftRL(
             draftName,
             OVERRIDE_EMAIL_RECIPIENT || email,
+            [EMAIL_SENDER_ADDRESS],
             [],
-            [],
-            { name: 'SEI Precourse', email: 'sei.precourse@galvanize.com' },
+            { name: EMAIL_SENDER_NAME, email: EMAIL_SENDER_ADDRESS },
             fields,
           );
         }
@@ -297,7 +302,7 @@ const SEND_EMAILS = true;
     );
 
     // only update cache if using real data
-    if (!OVERRIDE_EMAIL_RECIPIENT && !SEND_SINGLE_EMAIL_ONLY && SEND_EMAILS) {
+    if (!OVERRIDE_EMAIL_RECIPIENT && !SEND_SINGLE_EMAIL_ONLY && SEND_EMAILS && recipients.length > 0) {
       console.info('Updating list of sent emails...');
       await upsertSheetMetadata(docPulse, key, allRecipients.map(({ email }) => email).join(','));
     }
