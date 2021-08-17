@@ -299,14 +299,8 @@ const sendInternalSlackMessage = async (newStudents, naughtyListStudents, pods) 
   slackMessage += pods
     .filter((pod) => pod.repoCompletionRowsToAdd.length > 0)
     .map((pod) => pod.repoCompletionRowsToAdd.map(
-      (student) => `- ${student.fullName} → ${pod.name}`,
+      (student) => `· ${student.fullName} → ${pod.name}`,
     ).join('\n')).join('\n');
-  if (naughtyListStudents.length > 0) {
-    slackMessage += `\n👿 Naughty List has ${naughtyListStudents.length} student${naughtyListStudents.length !== 1 ? 's' : ''}\n`;
-    slackMessage += naughtyListStudents.map(
-      (student) => `- ${student.fullName} (${student.email})`,
-    ).join('\n');
-  }
   if (slackMessage !== '') {
     await sendMessageToChannel('new-students', slackMessage);
   }
