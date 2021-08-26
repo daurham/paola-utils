@@ -143,7 +143,7 @@ const formatStudentForRepoCompletion = (student, techMentor, rowIndex) => ({
   twiddler: 'No Fork',
   recursion: 'No Fork',
   partOneComplete: `=IF(AND(L${rowIndex}="Yes", M${rowIndex}>=26, N${rowIndex}>=3323, N${rowIndex}<=3329, O${rowIndex}=61), "Yes", "No")`,
-  partTwoComplete: `=IF(AND(P${rowIndex}=63, Q${rowIndex}>=3.5, ISNUMBER(Q${rowIndex})), "Yes", "No")`,
+  partTwoComplete: `=IF(AND(P${rowIndex}=64, Q${rowIndex}>=3.5, ISNUMBER(Q${rowIndex})), "Yes", "No")`,
   partThreeComplete: `=IF(AND(R${rowIndex}>=2, ISNUMBER(R${rowIndex})),"Yes", "No")`,
   allComplete: `=IF(AND(S${rowIndex}="Yes",T${rowIndex}="Yes",U${rowIndex}="Yes"),"Yes","No")`,
   // onTimeKoansPR: student.onTimeKoansPR,
