@@ -20,7 +20,7 @@ module.exports = {
   },
 
   /* Learn */
-  LEARN_COHORT_ID: '2965',
+  LEARN_COHORT_ID: '2975',
   LEARN_API_COHORTS: 'https://learn-2.galvanize.com/api/v1/cohorts/',
 
   /* GitHub */
