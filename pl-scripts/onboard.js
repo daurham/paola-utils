@@ -25,6 +25,8 @@ const {
   SHEET_ID_HRPTIV_NAUGHTY_LIST,
 } = require('../constants');
 
+const MAX_STUDENTS_PER_RUN = 50;
+
 const NAUGHTY_LIST_HEADERS = [
   'fullName',
   'campus',
@@ -328,10 +330,11 @@ const formatSFDCStudentForRoster = (student) => {
   const newStudents = (await getNewStudentsFromSFDC())
     .map(formatSFDCStudentForRoster)
     .sort((a, b) => a.campus.toLowerCase().localeCompare(b.campus.toLowerCase()));
-  const eligibleNewStudents = newStudents.filter(hasIntakeFormCompleted);
+  const allEligibleNewStudents = newStudents.filter(hasIntakeFormCompleted);
+  const eligibleNewStudents = allEligibleNewStudents.slice(0, MAX_STUDENTS_PER_RUN);
   const naughtyListStudents = newStudents.filter((student) => !hasIntakeFormCompleted(student));
 
-  console.info(eligibleNewStudents.length, 'new students');
+  console.info(`Adding ${eligibleNewStudents.length} out of ${allEligibleNewStudents.length} new students`);
   console.info(naughtyListStudents.length, 'students without their intake form completed');
 
   // Always update naughty list, ensuring old records are all cleared
