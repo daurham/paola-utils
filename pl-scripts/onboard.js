@@ -296,7 +296,7 @@ const sendEmailsToStudents = async (students) => {
   }
 };
 
-const sendInternalSlackMessage = async (newStudents, naughtyListStudents, pods) => {
+const sendInternalSlackMessage = async (newStudents, pods) => {
   let slackMessage = `🎉 ${newStudents.length} new student${newStudents.length !== 1 ? 's' : ''} added! 🎉\n`;
   slackMessage += pods
     .filter((pod) => pod.repoCompletionRowsToAdd.length > 0)
@@ -337,34 +337,74 @@ const formatSFDCStudentForRoster = (student) => {
   console.info(`Adding ${eligibleNewStudents.length} out of ${allEligibleNewStudents.length} new students`);
   console.info(naughtyListStudents.length, 'students without their intake form completed');
 
-  // Always update naughty list, ensuring old records are all cleared
-  console.info('Updating HRPTIV naughty list...');
-  const sheetHRPTIV = await loadGoogleSpreadsheet(DOC_ID_HRPTIV);
-  await replaceWorksheet(
-    sheetHRPTIV.sheetsById[SHEET_ID_HRPTIV_NAUGHTY_LIST],
-    NAUGHTY_LIST_HEADERS,
-    naughtyListStudents,
-  );
+  try {
+    // Always update naughty list, ensuring old records are all cleared
+    console.info('Updating HRPTIV naughty list...');
+    const sheetHRPTIV = await loadGoogleSpreadsheet(DOC_ID_HRPTIV);
+    await replaceWorksheet(
+      sheetHRPTIV.sheetsById[SHEET_ID_HRPTIV_NAUGHTY_LIST],
+      NAUGHTY_LIST_HEADERS,
+      naughtyListStudents,
+    );
+  } catch (err) {
+    console.error('Error updating HRPTIV naughty list!');
+    console.error(err);
+  }
 
   if (eligibleNewStudents.length > 0) {
-    console.info('Adding students to HRPTIV roster...');
-    await sheetHRPTIV.sheetsById[SHEET_ID_HRPTIV_ROSTER].addRows(eligibleNewStudents);
-    const sheetPulse = await loadGoogleSpreadsheet(DOC_ID_PULSE);
-    const pods = await assignStudentsToPods(sheetPulse, eligibleNewStudents);
-    console.info('Adding students to Repo Completion sheets...');
-    await addStudentsToRepoCompletionSheets(sheetPulse, pods);
-    console.info('Adding students to the Learn cohort...');
-    await addStudentsToLearnCohort(eligibleNewStudents);
-    console.info('Adding students to Google Groups...');
-    await addStudentsToGoogleGroups(eligibleNewStudents);
-    console.info('Creating Slack channels...');
-    await createStudentSlackChannels(eligibleNewStudents);
-    console.info('Adding students to GitHub team and creating branches...');
-    await addStudentsToGitHub(eligibleNewStudents);
-    console.info('Sending welcome emails to new students...');
-    await sendEmailsToStudents(eligibleNewStudents);
+    try {
+      console.info('Adding students to HRPTIV roster...');
+      await sheetHRPTIV.sheetsById[SHEET_ID_HRPTIV_ROSTER].addRows(eligibleNewStudents);
+    } catch (err) {
+      console.error('Error updating HRPTIV roster!');
+      console.error(err);
+    }
+    try {
+      const sheetPulse = await loadGoogleSpreadsheet(DOC_ID_PULSE);
+      const pods = await assignStudentsToPods(sheetPulse, eligibleNewStudents);
+      console.info('Adding students to Repo Completion sheets...');
+      await addStudentsToRepoCompletionSheets(sheetPulse, pods);
+    } catch (err) {
+      console.error('Error adding students to Repo Completion sheets!');
+      console.error(err);
+    }
+    try {
+      console.info('Adding students to the Learn cohort...');
+      await addStudentsToLearnCohort(eligibleNewStudents);
+    } catch (err) {
+      console.error('Error adding students to the Learn cohort!');
+      console.error(err);
+    }
+    try {
+      console.info('Adding students to Google Groups...');
+      await addStudentsToGoogleGroups(eligibleNewStudents);
+    } catch (err) {
+      console.error('Error adding students to Google Groups!');
+      console.error(err);
+    }
+    try {
+      console.info('Creating Slack channels...');
+      await createStudentSlackChannels(eligibleNewStudents);
+    } catch (err) {
+      console.error('Error creating Slack channels!');
+      console.error(err);
+    }
+    try {
+      console.info('Adding students to GitHub team and creating branches...');
+      await addStudentsToGitHub(eligibleNewStudents);
+    } catch (err) {
+      console.error('Error adding students to GitHub!');
+      console.error(err);
+    }
+    try {
+      console.info('Sending welcome emails to new students...');
+      await sendEmailsToStudents(eligibleNewStudents);
+    } catch (err) {
+      console.error('Error sending welcome emails to new students!');
+      console.error(err);
+    }
     console.info('Reporting to Slack...');
-    await sendInternalSlackMessage(eligibleNewStudents, naughtyListStudents, pods);
+    await sendInternalSlackMessage(eligibleNewStudents, pods);
   }
 
   console.info('Done!');
