@@ -48,6 +48,10 @@ module.exports = {
     'david.coleman@galvanize.com',
     // Peter Muller isn't here since his Slack token creates the channels
   ],
+  // Workspace 1 (2109)
+  // SLACK_JOIN_URL_STUB: 'join.slack.com/t/hrseip/shared_invite/zt-u5go0u3k-9H_2XJZLp8JwSfvyhMNeRQ',
+  // Workspace 2 (2111)
+  SLACK_JOIN_URL_STUB: 'join.slack.com/t/sei-opr/shared_invite/zt-n8sr33fp-WgI39v3Ev0EhW1ixyws1_w',
 
   /* Salesforce */
   SFDC_OPPTY_RECORD_ID: '012j0000000qVAP',

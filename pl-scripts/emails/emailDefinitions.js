@@ -1,6 +1,6 @@
 const { getNewStudentsFromSFDC, hasIntakeFormCompleted } = require('../getNewStudentsFromSFDC');
 const { slackAPIRequest } = require('../../slack');
-const { LEARN_COHORT_ID } = require('../../constants');
+const { LEARN_COHORT_ID, SLACK_JOIN_URL_STUB } = require('../../constants');
 const {
   getDeadline,
   getMissedDeadlineStudents,
@@ -11,8 +11,6 @@ const {
 const { getRosterStudents } = require('./getStudents');
 
 const MERGE_FIELD_STUDENT_INFO_FORM_URL = 'www.tfaforms.com/369587?tfa_57=';
-const MERGE_FIELD_SLACK_JOIN_URL = 'join.slack.com/t/hrseip/shared_invite/zt-u5go0u3k-9H_2XJZLp8JwSfvyhMNeRQ';
-// Workspace 2: join.slack.com/t/sei-opr/shared_invite/zt-n8sr33fp-WgI39v3Ev0EhW1ixyws1_w
 
 const normalizeEmail = (email) => email.toLowerCase().replace(/\./g, '');
 const normalizeName = (name) => name.toLowerCase().replace(/\s/g, '');
@@ -63,7 +61,7 @@ module.exports = [{
       email: student.email,
       fields: {
         name: formatName(student.preferredFirstName),
-        slackJoinURL: MERGE_FIELD_SLACK_JOIN_URL,
+        slackJoinURL: SLACK_JOIN_URL_STUB,
       },
     }));
   },
