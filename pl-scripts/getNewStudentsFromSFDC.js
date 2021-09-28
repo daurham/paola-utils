@@ -16,24 +16,28 @@ const getEnrolledStudentSFDCContactIDs = async (docID, sheetID) => {
   return rows.map((row) => row.sfdcContactId);
 };
 
+const getStudentsFromSFDC = async () => []
+  .concat(
+    await getStudents(FULL_TIME_COURSE_START_DATE, SFDC_FULL_TIME_COURSE_TYPE),
+    await getStudents(PART_TIME_COURSE_START_DATE, SFDC_PART_TIME_COURSE_TYPE),
+  )
+  .filter((student) => student.stage === 'Deposit Paid' || student.stage === 'Accepted');
+
 const getNewStudentsFromSFDC = async () => {
+  const students = await getStudentsFromSFDC();
   const enrolledStudentContactIDs = await getEnrolledStudentSFDCContactIDs(
     DOC_ID_HRPTIV,
     SHEET_ID_HRPTIV_ROSTER,
   );
-  return []
-    .concat(
-      await getStudents(FULL_TIME_COURSE_START_DATE, SFDC_FULL_TIME_COURSE_TYPE),
-      await getStudents(PART_TIME_COURSE_START_DATE, SFDC_PART_TIME_COURSE_TYPE),
-    )
-    .filter((student) => (student.stage === 'Deposit Paid' || student.stage === 'Accepted')
-      && !enrolledStudentContactIDs.includes(student.sfdcContactId));
+  return students.filter((student) =>
+    !enrolledStudentContactIDs.includes(student.sfdcContactId));
 };
 
 const hasIntakeFormCompleted = (student) => student.funFact
   && student.selfReportedPrepartion && student.githubHandle && student.pronouns;
 
 module.exports = {
+  getStudentsFromSFDC,
   getNewStudentsFromSFDC,
   hasIntakeFormCompleted,
 };
