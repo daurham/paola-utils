@@ -337,10 +337,10 @@ const formatSFDCStudentForRoster = (student) => {
   console.info(`Adding ${eligibleNewStudents.length} out of ${allEligibleNewStudents.length} new students`);
   console.info(naughtyListStudents.length, 'students without their intake form completed');
 
+  const sheetHRPTIV = await loadGoogleSpreadsheet(DOC_ID_HRPTIV);
   try {
     // Always update naughty list, ensuring old records are all cleared
     console.info('Updating HRPTIV naughty list...');
-    const sheetHRPTIV = await loadGoogleSpreadsheet(DOC_ID_HRPTIV);
     await replaceWorksheet(
       sheetHRPTIV.sheetsById[SHEET_ID_HRPTIV_NAUGHTY_LIST],
       NAUGHTY_LIST_HEADERS,
@@ -359,9 +359,9 @@ const formatSFDCStudentForRoster = (student) => {
       console.error('Error updating HRPTIV roster!');
       console.error(err);
     }
+    const sheetPulse = await loadGoogleSpreadsheet(DOC_ID_PULSE);
+    const pods = await assignStudentsToPods(sheetPulse, eligibleNewStudents);
     try {
-      const sheetPulse = await loadGoogleSpreadsheet(DOC_ID_PULSE);
-      const pods = await assignStudentsToPods(sheetPulse, eligibleNewStudents);
       console.info('Adding students to Repo Completion sheets...');
       await addStudentsToRepoCompletionSheets(sheetPulse, pods);
     } catch (err) {
