@@ -1,5 +1,5 @@
 const { getNewStudentsFromSFDC, hasIntakeFormCompleted } = require('../getNewStudentsFromSFDC');
-const { slackAPIRequest } = require('../../slack');
+const { getAllSlackUsers } = require('../../slack');
 const { LEARN_COHORT_ID, SLACK_JOIN_URL_STUB } = require('../../constants');
 const {
   getDeadline,
@@ -15,13 +15,7 @@ const MERGE_FIELD_STUDENT_INFO_FORM_URL = 'www.tfaforms.com/369587?tfa_57=';
 const normalizeEmail = (email) => email.toLowerCase().replace(/\./g, '');
 const normalizeName = (name) => name.toLowerCase().replace(/\s/g, '');
 async function getMissingSlackUsers() {
-  let cursor = '';
-  const slackUsers = [];
-  do {
-    const response = await slackAPIRequest(`users.list?cursor=${cursor}`, 'GET'); // eslint-disable-line no-await-in-loop
-    slackUsers.push(...response.members);
-    cursor = response.response_metadata.next_cursor;
-  } while (cursor);
+  const slackUsers = await getAllSlackUsers();
   const rosterStudents = await getRosterStudents();
   return rosterStudents.filter((rosterStudent) => !slackUsers.find(
     (slackUser) => slackUser.profile && slackUser.profile.email

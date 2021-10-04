@@ -118,11 +118,23 @@ const createChannelPerStudent = async (nameList) => {
 //   'GET',
 // );
 
+const getAllSlackUsers = async () => {
+  let cursor = '';
+  const slackUsers = [];
+  do {
+    const response = await slackAPIRequest(`users.list?cursor=${cursor}`, 'GET'); // eslint-disable-line no-await-in-loop
+    slackUsers.push(...response.members);
+    cursor = response.response_metadata.next_cursor;
+  } while (cursor);
+  return slackUsers;
+};
+
 module.exports = {
   slackAPIRequest: rateLimitedAPIRequest,
 
   createChannelPerStudent,
   sendMessageToChannel,
+  getAllSlackUsers,
 };
 
 // WIP block?
