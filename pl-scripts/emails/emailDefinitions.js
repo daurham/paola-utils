@@ -39,7 +39,7 @@ module.exports = [{
     const naughtyList = newStudents
       .filter((student) => !hasIntakeFormCompleted(student));
     return naughtyList.map((student) => ({
-      email: student.email,
+      student,
       fields: {
         formURL: MERGE_FIELD_STUDENT_INFO_FORM_URL + student.sfdcContactId,
       },
@@ -52,7 +52,7 @@ module.exports = [{
     const students = await getMissingSlackUsers();
     const staleStudents = students.filter((s) => numDaysAgo(s.dateAddedToPrecourse) > 1);
     return staleStudents.map((student) => ({
-      email: student.email,
+      student,
       fields: {
         name: formatName(student.preferredFirstName),
         slackJoinURL: SLACK_JOIN_URL_STUB,
@@ -65,7 +65,7 @@ module.exports = [{
   async getEmails() {
     const students = await getMissedDeadlineStudents(1);
     return students.map((student) => ({
-      email: student.email,
+      student,
       fields: {
         name: formatName(student.preferredFirstName),
         deadlineDate: getDeadline(student, 1),
@@ -81,7 +81,7 @@ module.exports = [{
   async getEmails() {
     const students = await getMissedDeadlineStudents(2);
     return students.map((student) => ({
-      email: student.email,
+      student,
       fields: {
         name: formatName(student.preferredFirstName),
         deadlineDate: getDeadline(student, 2),
@@ -97,7 +97,7 @@ module.exports = [{
   async getEmails() {
     const students = await getMissedDeadlineStudents(3);
     return students.map((student) => ({
-      email: student.email,
+      student,
       fields: {
         name: formatName(student.preferredFirstName),
         deadlineDate: getDeadline(student, 3),

@@ -36,8 +36,8 @@ async function sendEmails(
     const sheetMetadata = (await getSheetMetadata(docPulse, key)) || '';
     const sentEmails = sheetMetadata.split(',');
     const allRecipients = await getEmails();
-    const filteredRecipients = allRecipients.filter(({ email }) => !sentEmails.includes(email));
-    filteredRecipients.forEach(({ email }) => console.info('> ', email));
+    const filteredRecipients = allRecipients.filter(({ student }) => !sentEmails.includes(student.email));
+    filteredRecipients.forEach(({ student }) => console.info('> ', student.email));
     let recipients = filteredRecipients;
     if (testEmailAddress) {
       if (filteredRecipients.length === 0) {
@@ -60,12 +60,12 @@ async function sendEmails(
     }
 
     await Promise.all(
-      recipients.map(({ email, fields }) => {
-        console.info(`Sending "${draftName} to "${email}"`);
+      recipients.map(({ student, fields }) => {
+        console.info(`Sending "${draftName}" to ${student.fullName} <${student.email}> (${student.techMentor}'s Pod)`);
         if (!printRecipientsWithoutSending) {
           return sendEmailFromDraftRL(
             draftName,
-            testEmailAddress || email,
+            testEmailAddress || student.email,
             [EMAIL_SENDER_ADDRESS],
             [],
             { name: EMAIL_SENDER_NAME, email: EMAIL_SENDER_ADDRESS },
@@ -79,7 +79,7 @@ async function sendEmails(
     // only update cache if using real data
     if (!printRecipientsWithoutSending && !testEmailAddress && recipients.length > 0) {
       console.info('Updating list of sent emails...');
-      await upsertSheetMetadata(docPulse, key, allRecipients.map(({ email }) => email).join(','));
+      await upsertSheetMetadata(docPulse, key, allRecipients.map(({ student }) => student.email).join(','));
     }
   }
 }
@@ -87,6 +87,6 @@ async function sendEmails(
 module.exports = sendEmails;
 
 (async () => {
-  const def = allEmailDefinitions.find((e) => e.key === 'joinSlackReminder');
-  sendEmails([def], true);
+  const defs = allEmailDefinitions.filter((e) => e.key === 'joinSlackReminder' || e.key === 'studentInfoFormReminder');
+  sendEmails(defs, true);
 })();
