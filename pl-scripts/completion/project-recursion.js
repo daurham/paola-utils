@@ -9,8 +9,10 @@ module.exports = {
         function onComplete() {
           resolve({
             repoCompletionChanges: {
-              recursion: mocha.suite.suites.filter(
-                (section) => section.tests[0].state === 'passed',
+              recursion: mocha.suite.suites.filter(suite =>
+                suite.suites.length > 0
+                  ? suite.suites.every(s => s.tests.every(t => t.state === 'passed'))
+                  : suite.tests.every(t => t.state === 'passed')
               ).length,
             },
           });
