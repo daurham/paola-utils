@@ -2,7 +2,7 @@
 module.exports = {
   repoName: 'underbar',
   testRunnerFileName: 'SpecRunner.html',
-  sheetColumns: ['underbarPartOne', 'underbarPartTwo'],
+  repoCompletionColumnNames: ['underbarPartOne', 'underbarPartTwo'],
   getTestResults: (page) =>
     page.evaluate(() => {
       return new Promise((resolve) => {
@@ -16,9 +16,11 @@ module.exports = {
               .reduce((sum, cur) => sum + cur, 0);
           });
           resolve({
-            underbarPartOne: passedTestCount[0],
-            underbarPartTwo: passedTestCount[1],
-            // underbarExtra: passedTestCount[2],
+            repoCompletionChanges: {
+              underbarPartOne: passedTestCount[0],
+              underbarPartTwo: passedTestCount[1],
+              // underbarExtra: passedTestCount[2],
+            },
           });
         }
         // TODO: mocha._state is not present here, so there's a potential

@@ -17,6 +17,7 @@ const TEST_TIME_LIMIT_MS = 30000;
 const CELL_VALUE_NO_FORK = 'No Fork';
 const CELL_VALUE_TIMEOUT = 'Timed Out';
 const CELL_VALUE_ERROR = 'Error';
+const CELL_VALUE_APPEND_LINT_FAILURE = '🧹';
 
 const GIT_RESPONSE_LOG_STRINGS = {
   [GIT_RETURN_CODE.REPO_CLONED]: 'Cloned remote repo',
@@ -29,8 +30,8 @@ const GIT_RESPONSE_LOG_STRINGS = {
 
 const getTime = () => new Date().toLocaleTimeString('en-US', { hour12: false });
 
-function getDefaultProjectValues(project, value) {
-  return project.sheetColumns.reduce(
+function getDefaultProjectValues(columnNames, value) {
+  return columnNames.reduce(
     (obj, col) => ({ ...obj, [col]: value }),
     {},
   );
@@ -45,7 +46,12 @@ async function batchPromises(promiseGenerators, batchSize) {
   }
 }
 
-async function executeTestRunner(testRunnerPath, callback, showLogs) {
+async function lintProject(projectPath) {
+  // TODO: run eslint here and capture lint failure messages
+  return [];
+}
+
+async function executeHTMLTestRunner(testRunnerPath, callback, showLogs) {
   if (!fs.existsSync(testRunnerPath)) {
     throw new Error(`Test runner does not exist: ${testRunnerPath}`);
   }
@@ -58,17 +64,23 @@ async function executeTestRunner(testRunnerPath, callback, showLogs) {
     ],
   });
   const page = await browser.newPage();
+
+  let pageError;
+  page.on('pageerror', (err) => pageError = err);
+
   if (showLogs) {
     page.on('console', (c) =>
       console.log(getTime(), '[Headless Browser]', c.text()),
     );
   }
+
   await page.goto(`file://${testRunnerPath}`);
 
   try {
     const result = await asyncTimeout(callback(page), TEST_TIME_LIMIT_MS);
     await browser.close();
     if (result instanceof Error) throw result;
+    result.error = pageError;
     return result;
   } catch (err) {
     await browser.close();
@@ -95,33 +107,35 @@ async function fetchAndTestProject({
   const gitResult = await cloneOrPullRepository(
     localRepoPath,
     githubPath,
-    // lastCommitHash,
+    lastCommitHash,
   );
   console.info(getTime(), logPrefix, GIT_RESPONSE_LOG_STRINGS[gitResult.code]);
 
-  const results = {
-    hash: gitResult.hash,
-    changes: {},
-  };
-
+  let repoCompletionChanges, lintErrors, runtimeError;
+  let testRunnerResults = {};
   if (
     gitResult.code === GIT_RETURN_CODE.REPO_CLONED ||
     gitResult.code === GIT_RETURN_CODE.REPO_PULLED
   ) {
+    console.info(getTime(), logPrefix, 'Running linter on project...');
+    lintErrors = await lintProject(localRepoPath);
+
     console.info(getTime(), logPrefix, 'Executing test runner...');
     try {
       if (project.testRunnerFileName) {
         // Preferentially use an HTML testRunnerFileName in conjunction with
         // a getTestResults function that runs on the page
-        results.changes = await executeTestRunner(
+        testRunnerResults = await executeHTMLTestRunner(
           path.join(localRepoPath, project.testRunnerFileName),
           project.getTestResults,
           verbose,
         );
       } else if (project.runTests) {
         // If there's no HTML test runner, use a supplied runTests function
-        results.changes = await project.runTests(path.join(localRepoPath));
+        testRunnerResults = await project.runTests(path.join(localRepoPath));
       }
+      repoCompletionChanges = testRunnerResults.repoCompletionChanges;
+      runtimeError = testRunnerResults.error;
     } catch (err) {
       if (verbose) console.error(err);
       const cellValue = {
@@ -129,12 +143,21 @@ async function fetchAndTestProject({
           err instanceof TimeoutError ? CELL_VALUE_TIMEOUT : CELL_VALUE_ERROR,
         note: `${err.name}: ${err.message}`,
       };
-      results.changes = getDefaultProjectValues(project, cellValue);
+      repoCompletionChanges = getDefaultProjectValues(project.repoCompletionColumnNames, cellValue);
+      runtimeError = err;
     }
   } else if (gitResult.code === GIT_RETURN_CODE.REPO_NOT_FOUND) {
-    results.changes = getDefaultProjectValues(project, CELL_VALUE_NO_FORK);
+    repoCompletionChanges = getDefaultProjectValues(project.repoCompletionColumnNames, CELL_VALUE_NO_FORK);
   }
-  return results;
+
+  return {
+    gitCommitHash: gitResult.hash,
+    lintErrors: lintErrors || [],
+    runtimeError,
+    repoCompletionChanges: repoCompletionChanges || {},
+    failedTests: testRunnerResults.failedTests,
+    incompleteMessages: testRunnerResults.incompleteMessages,
+  };
 }
 
 async function updateRepoCompletionWorksheet({
@@ -187,8 +210,8 @@ async function updateRepoCompletionWorksheet({
             lastCommitHash: student.metadata[`${project.repoName}LastCommit`],
             localPathToStudentRepos,
           });
-          Object.assign(studentResults, results.changes);
-          student.metadata[`${project.repoName}LastCommit`] = results.hash; // eslint-disable-line no-param-reassign
+          Object.assign(studentResults, results.repoCompletionChanges);
+          student.metadata[`${project.repoName}LastCommit`] = results.gitCommitHash; // eslint-disable-line no-param-reassign
         }),
       );
       // Update repo completion sheet

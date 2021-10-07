@@ -2,7 +2,7 @@
 module.exports = {
   repoName: 'javascript-koans',
   testRunnerFileName: 'KoansRunner.html',
-  sheetColumns: ['koansMinReqs', 'javascriptKoans'],
+  repoCompletionColumnNames: ['koansMinReqs', 'javascriptKoans'],
   getTestResults: (page) =>
     page.evaluate(() => {
       return new Promise((resolve) => {
@@ -16,22 +16,27 @@ module.exports = {
             'About Objects',
           ];
           resolve({
-            koansMinReqs: requiredSuites.every((suiteName) =>
-              suites.some(
-                (suite) =>
-                  suite.description === suiteName &&
-                  suite.results().failedCount === 0,
+            repoCompletionChanges: {
+              koansMinReqs: requiredSuites.every((suiteName) =>
+                suites.some(
+                  (suite) =>
+                    suite.description === suiteName &&
+                    suite.results().failedCount === 0,
+                ),
+              )
+                ? 'Yes'
+                : 'No',
+              javascriptKoans: suites.reduce(
+                (sum, suite) =>
+                  sum +
+                  suite.specs().filter((spec) => spec.results_.failedCount === 0) // eslint-disable-line no-underscore-dangle
+                    .length,
+                0,
               ),
-            )
-              ? 'Yes'
-              : 'No',
-            javascriptKoans: suites.reduce(
-              (sum, suite) =>
-                sum +
-                suite.specs().filter((spec) => spec.results_.failedCount === 0) // eslint-disable-line no-underscore-dangle
-                  .length,
-              0,
-            ),
+            },
+            failedTests: Array.from(
+              document.querySelectorAll('.spec.failed a.description')
+            ).map((elem) => elem.getAttribute('title')),
           });
         }
 

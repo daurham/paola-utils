@@ -9,7 +9,7 @@ const APPEND_TO_TEST_COUNT_ON_NESTED_SUITES = ' 🤔';
 module.exports = {
   repoName: 'testbuilder',
   testRunnerFileName: 'index.html',
-  sheetColumns: ['testbuilder'],
+  repoCompletionColumnNames: ['testbuilder'],
   getTestResults: async (page) => {
     let hasCompletedMessage = false;
     page.on('console', function onConsole(event) {
@@ -42,7 +42,9 @@ module.exports = {
     // Bail out if suite isn't running
     if (!(await page.evaluate(() => document.querySelector('.passes')))) {
       return {
-        testbuilder: 0,
+        repoCompletionChanges: {
+          testbuilder: 0,
+        },
       };
     }
 
@@ -79,7 +81,9 @@ module.exports = {
     }
 
     return {
-      testbuilder: testsPassing,
+      repoCompletionChanges: {
+        testbuilder: testsPassing,
+      },
     };
   },
 };

@@ -3,7 +3,7 @@ const path = require('path');
 
 module.exports = {
   repoName: 'twiddler',
-  sheetColumns: ['onTimeTwiddlerPR'],
+  repoCompletionColumnNames: ['onTimeTwiddlerPR'],
   runTests: (repoPath) => {
     const strippedPath = repoPath.replace(path.resolve(__dirname, '../..'), '');
     return cypress
@@ -27,7 +27,9 @@ module.exports = {
       })
       .then((results) => {
         return {
-          onTimeTwiddlerPR: results.totalPassed,
+          repoCompletionChanges: {
+            onTimeTwiddlerPR: results.totalPassed,
+          },
         };
       });
   },
