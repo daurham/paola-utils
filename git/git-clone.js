@@ -12,8 +12,8 @@ const GIT_RETURN_CODE = {
 
 function getRepositoryURL(githubPath) {
   let auth = '';
-  if (process.env.GIT_AUTH_USER && process.env.GIT_TOKEN) {
-    auth = `${process.env.GIT_AUTH_USER}:${process.env.GIT_TOKEN}@`;
+  if (process.env.GITHUB_AUTH_USER && process.env.GITHUB_AUTH_TOKEN) {
+    auth = `${process.env.GITHUB_AUTH_USER}:${process.env.GITHUB_AUTH_TOKEN}@`;
   }
   return `https://${auth}github.com/${githubPath}`;
 }
