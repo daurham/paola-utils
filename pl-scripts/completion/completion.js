@@ -117,8 +117,10 @@ async function fetchAndTestProject({
     gitResult.code === GIT_RETURN_CODE.REPO_CLONED ||
     gitResult.code === GIT_RETURN_CODE.REPO_PULLED
   ) {
-    console.info(getTime(), logPrefix, 'Running linter on project...');
-    lintErrors = await lintProject(localRepoPath);
+    if (!project.skipLinting) {
+      console.info(getTime(), logPrefix, 'Running linter on project...');
+      lintErrors = await lintProject(localRepoPath);
+    }
 
     console.info(getTime(), logPrefix, 'Executing test runner...');
     try {
@@ -155,8 +157,7 @@ async function fetchAndTestProject({
     lintErrors: lintErrors || [],
     runtimeError,
     repoCompletionChanges: repoCompletionChanges || {},
-    failedTests: testRunnerResults.failedTests,
-    incompleteMessages: testRunnerResults.incompleteMessages,
+    failureMessages: testRunnerResults.failureMessages,
   };
 }
 

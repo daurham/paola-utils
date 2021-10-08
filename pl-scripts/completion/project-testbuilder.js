@@ -12,7 +12,9 @@ module.exports = {
   repoCompletionColumnNames: ['testbuilder'],
   getTestResults: async (page) => {
     let hasCompletedMessage = false;
+    let lastLogLine;
     page.on('console', function onConsole(event) {
+      lastLogLine = event.text();
       if (event.text() === MESSAGE_SUITE_COMPLETED) {
         hasCompletedMessage = true;
       } else if (event.text().startsWith(MESSAGE_FINAL_STEP_READY)) {
@@ -62,11 +64,8 @@ module.exports = {
         Number(document.querySelector('.failures em').innerText);
       return executedTests >= definedTests;
     });
-
-    const hasNestedSuites = await page.evaluate(() => {
-      return mocha.suite.suites.some((suite) => suite.suites.length > 0);
-    });
-
+    
+    const failureMessages = [];
     let testsPassing =
       Number(
         await page.$$eval(
@@ -76,14 +75,19 @@ module.exports = {
       ) || 0;
     if (!hasCompletedMessage) {
       testsPassing += APPEND_TO_TEST_COUNT_ON_INCOMPLETE;
-    } else if (hasNestedSuites) {
-      testsPassing += APPEND_TO_TEST_COUNT_ON_NESTED_SUITES;
+      const strippedLastLogLine = lastLogLine.replace(/%c/g, '').replace(/\n\s+font\-weight.+$/, '');
+      failureMessages.push(
+        'The test runner did not make it to the final completion message!\n' +
+        'The last message logged was:\n' +
+        strippedLastLogLine
+      );
     }
 
     return {
       repoCompletionChanges: {
         testbuilder: testsPassing,
       },
+      failureMessages,
     };
   },
 };

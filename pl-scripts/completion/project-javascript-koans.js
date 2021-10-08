@@ -15,17 +15,19 @@ module.exports = {
             'About Functions',
             'About Objects',
           ];
+          const hasMinReqs = requiredSuites.every((suiteName) =>
+            suites.some(
+              (suite) =>
+                suite.description === suiteName &&
+                suite.results().failedCount === 0,
+            ),
+          );
+          const failureMessages = Array.from(
+            document.querySelectorAll('.spec.failed a.description')
+          ).map((elem) => elem.getAttribute('title'));
           resolve({
             repoCompletionChanges: {
-              koansMinReqs: requiredSuites.every((suiteName) =>
-                suites.some(
-                  (suite) =>
-                    suite.description === suiteName &&
-                    suite.results().failedCount === 0,
-                ),
-              )
-                ? 'Yes'
-                : 'No',
+              koansMinReqs: hasMinReqs ? 'Yes' : 'No',
               javascriptKoans: suites.reduce(
                 (sum, suite) =>
                   sum +
@@ -34,9 +36,7 @@ module.exports = {
                 0,
               ),
             },
-            failedTests: Array.from(
-              document.querySelectorAll('.spec.failed a.description')
-            ).map((elem) => elem.getAttribute('title')),
+            failureMessages: hasMinReqs ? [] : failureMessages,
           });
         }
 
