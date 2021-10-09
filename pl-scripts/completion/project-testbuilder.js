@@ -12,7 +12,7 @@ module.exports = {
   repoCompletionColumnNames: ['testbuilder'],
   getTestResults: async (page) => {
     let hasCompletedMessage = false;
-    let lastLogLine;
+    let lastLogLine = '';
     page.on('console', function onConsole(event) {
       lastLogLine = event.text();
       if (event.text() === MESSAGE_SUITE_COMPLETED) {
@@ -21,6 +21,13 @@ module.exports = {
         page.evaluate(() => window.nextStep());
       }
     });
+
+    const getErrorMessage = () => [
+      'The test runner did not make it to the final completion message! ' +
+      'The last message logged was:\n```\n' +
+      lastLogLine.replace(/%c/g, '').replace(/\s+font\-weight.+$/, '') +
+      '\n```',
+    ];
 
     await page.evaluate(function evalPage() {
       window.detectNetwork('38345678901234');
@@ -47,6 +54,7 @@ module.exports = {
         repoCompletionChanges: {
           testbuilder: 0,
         },
+        failureMessages: getErrorMessage(),
       };
     }
 
@@ -75,19 +83,13 @@ module.exports = {
       ) || 0;
     if (!hasCompletedMessage) {
       testsPassing += APPEND_TO_TEST_COUNT_ON_INCOMPLETE;
-      const strippedLastLogLine = lastLogLine.replace(/%c/g, '').replace(/\n\s+font\-weight.+$/, '');
-      failureMessages.push(
-        'The test runner did not make it to the final completion message! ' +
-        'The last message logged was:\n```\n' +
-        strippedLastLogLine + '\n```',
-      );
     }
 
     return {
       repoCompletionChanges: {
         testbuilder: testsPassing,
       },
-      failureMessages,
+      failureMessages: hasCompletedMessage ? [] : getErrorMessage(),
     };
   },
 };
