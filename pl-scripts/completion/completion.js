@@ -1,6 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
+const { CLIEngine } = require('eslint');
 const {
   loadGoogleSpreadsheet,
   getRows,
@@ -47,8 +48,21 @@ async function batchPromises(promiseGenerators, batchSize) {
 }
 
 async function lintProject(projectPath) {
-  // TODO: run eslint here and capture lint failure messages
-  return [];
+  // CLIEngine is deprecated now but we're pinning to 6.8.0
+  const eslintCLI = new CLIEngine({
+    cwd: projectPath,
+    useEslintrc: false, // don't inherit paola-utils eslint config!
+    configFile: path.join(projectPath, '.eslintrc.js'),
+    parserOptions: {
+      sourceType: 'script'
+    }
+  });
+  const report = eslintCLI.executeOnFiles('.');
+  return report.results.map((results) =>
+    results.messages.map((message) =>
+      `${results.filePath.replace(projectPath, '')}:${message.line}:${message.column}: ${message.message}`
+    )
+  ).flat();
 }
 
 async function executeHTMLTestRunner(testRunnerPath, callback, showLogs) {
