@@ -1,7 +1,7 @@
 const fetch = require('node-fetch');
 const { GITHUB_API_USERS, GITHUB_API_TEAMS } = require('../constants');
 
-const headers = { Authorization: `token ${process.env.GIT_AUTH_TOKEN}` };
+const headers = { Authorization: `token ${process.env.GITHUB_AUTH_TOKEN}` };
 
 function gitHubAPIRequest(endpoint, method, body) {
   return fetch(
@@ -147,6 +147,7 @@ const rateLimiter = new Bottleneck({
   minTime: 333,
 });
 const rateLimitedAPIRequest = rateLimiter.wrap(gitHubAPIRequest);
+exports.gitHubAPIRequest = rateLimitedAPIRequest;
 exports.createBranches = async (accountName, repoName, branchNames) => {
   const cacheKey = accountName + repoName;
   if (!createBranchHashCache.hasOwnProperty(cacheKey)) {
