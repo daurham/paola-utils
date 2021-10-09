@@ -18,7 +18,7 @@ module.exports = {
             failureMessages: mocha.suite.suites.slice(0, 2).map(suite =>
               suite.suites.map(nested => nested.tests).flat()
                 .filter(t => t.state === 'failed')
-                .map(test => `${test.parent.parent.title}: ${test.parent.title}: ${test.title}: ${test.err.message}`)
+                .map(test => `**${test.parent.parent.title}**: *${test.parent.title}*: \`${test.title}\`: \`${test.err.message}\``)
               ).flat()
           });
         }

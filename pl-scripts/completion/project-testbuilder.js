@@ -77,9 +77,9 @@ module.exports = {
       testsPassing += APPEND_TO_TEST_COUNT_ON_INCOMPLETE;
       const strippedLastLogLine = lastLogLine.replace(/%c/g, '').replace(/\n\s+font\-weight.+$/, '');
       failureMessages.push(
-        'The test runner did not make it to the final completion message!\n' +
-        'The last message logged was:\n' +
-        strippedLastLogLine
+        'The test runner did not make it to the final completion message! ' +
+        'The last message logged was:\n```\n' +
+        strippedLastLogLine + '\n```',
       );
     }
 

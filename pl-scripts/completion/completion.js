@@ -60,7 +60,7 @@ async function lintProject(projectPath) {
   const report = eslintCLI.executeOnFiles('.');
   return report.results.map((results) =>
     results.messages.map((message) =>
-      `${results.filePath.replace(projectPath, '')}:${message.line}:${message.column}: ${message.message}`
+      `\`${results.filePath.replace(projectPath, '')}:${message.line}:${message.column}\`: \`${message.message}\``
     )
   ).flat();
 }

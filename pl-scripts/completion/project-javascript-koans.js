@@ -22,9 +22,11 @@ module.exports = {
                 suite.results().failedCount === 0,
             ),
           );
-          const failureMessages = Array.from(
-            document.querySelectorAll('.spec.failed a.description')
-          ).map((elem) => elem.getAttribute('title'));
+          const failureMessages = jasmine.currentEnv_.currentRunner_.suites()
+            .map((suite) => suite.specs_.filter((spec) => spec.results_.failedCount > 0))
+            .flat()
+            .map(spec => `**${spec.suite.description}**: *${spec.description}*: ` +
+              `\`${spec.results_.items_.find(res => !res.passed_).message}\``);
           resolve({
             repoCompletionChanges: {
               koansMinReqs: hasMinReqs ? 'Yes' : 'No',
