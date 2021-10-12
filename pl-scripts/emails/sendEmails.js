@@ -9,7 +9,6 @@ const {
   // deleteSheetMetadata,
 } = require('../../googleSheets');
 const { sendEmailFromDraft } = require('../../googleMail');
-const allEmailDefinitions = require('./emailDefinitions');
 
 const EMAIL_SENDER_NAME = 'SEI Precourse';
 const EMAIL_SENDER_ADDRESS = 'sei.precourse@galvanize.com';
@@ -85,8 +84,3 @@ async function sendEmails(
 }
 
 module.exports = sendEmails;
-
-(async () => {
-  const defs = allEmailDefinitions.filter((e) => e.key === 'joinSlackReminder' || e.key === 'studentInfoFormReminder');
-  sendEmails(defs, true);
-})();
