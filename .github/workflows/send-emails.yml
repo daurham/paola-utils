@@ -1,0 +1,41 @@
+name: Send Emails
+on:
+  workflow_dispatch:
+    inputs:
+      emails:
+        description: 'emails to send'
+        required: false
+        default: 'studentInfoFormReminder joinSlackReminder'
+      dry-run:
+        description: 'print out recipient names without sending'
+        required: false
+        default: true
+      test-email-address:
+        description: 'email address that a single test email will be sent to'
+        required: false
+jobs:
+  send-emails:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+      - uses: actions/cache@v2
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+      - name: Install dependencies
+        run: yarn install
+      - name: Send emails
+        run: node pl-scripts/emails/cli.js --emails ${{ github.event.inputs.emails }} --dry-run ${{ github.event.inputs.dry-run }} --test-email-address ${{ github.event.inputs.test-email-address }}
+        env:
+          GOOGLE_SHEETS_CLIENT_EMAIL: ${{ secrets.GOOGLE_SHEETS_CLIENT_EMAIL }}
+          GOOGLE_SHEETS_PRIVATE_KEY: ${{ secrets.GOOGLE_SHEETS_PRIVATE_KEY }}
+          GMAIL_CLIENT_EMAIL: ${{ secrets.GMAIL_CLIENT_EMAIL }}
+          GMAIL_PRIVATE_KEY: ${{ secrets.GMAIL_PRIVATE_KEY }}
+          SFDC_LOGIN_URL: ${{ secrets.SFDC_LOGIN_URL }}
+          SFDC_USERNAME: ${{ secrets.SFDC_USERNAME }}
+          SFDC_PASSWORD: ${{ secrets.SFDC_PASSWORD }}
+          LEARN_TOKEN: ${{ secrets.LEARN_TOKEN }}
+          SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}

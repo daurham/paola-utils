@@ -1,5 +1,6 @@
 /* eslint-disable no-restricted-syntax, no-await-in-loop, no-console */
-require('dotenv').config();
+// require('dotenv').config();
+require('dotenv').config({path: '../../.env'});
 const Bottleneck = require('bottleneck');
 const { DOC_ID_PULSE } = require('../../constants');
 const {
@@ -8,6 +9,7 @@ const {
   upsertSheetMetadata,
   // deleteSheetMetadata,
 } = require('../../googleSheets');
+
 const { sendEmailFromDraft } = require('../../googleMail');
 
 const EMAIL_SENDER_NAME = 'SEI Precourse';
