@@ -21,6 +21,7 @@ const { argv } = yargs(process.argv)
   .option('test-email-address', {
     alias: 'test',
     describe: 'email address that a single test email will be sent to',
+    type: 'string'
   });
 
 sendEmails(

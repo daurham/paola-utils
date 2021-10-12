@@ -41,9 +41,10 @@ async function sendEmails(
     filteredRecipients.forEach(({ student }) => console.info('> ', student.email));
     let recipients = filteredRecipients;
     if (testEmailAddress) {
+    console.log('testEmailAddress is:', testEmailAddress)
       if (filteredRecipients.length === 0) {
         recipients = [{
-          email: testEmailAddress,
+          student: {email: testEmailAddress},
           fields: {
             name: 'Tchicphillait',
             deadlineDate: '13/37',
