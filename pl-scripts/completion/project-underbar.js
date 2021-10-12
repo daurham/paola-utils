@@ -28,7 +28,7 @@ module.exports = {
               underbarPartTwo: passedTestCount[1],
               // underbarExtra: passedTestCount[2],
             },
-            failureMessages: partOneFailures.length > 0 ? partOneFailures : partTwoFailures,
+            failureMessages: [].concat(partOneFailures, partTwoFailures),
           });
         }
         // TODO: mocha._state is not present here, so there's a potential
