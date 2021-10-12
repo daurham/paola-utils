@@ -22,7 +22,8 @@ module.exports = {
                 suite.results().failedCount === 0,
             ),
           );
-          const failureMessages = jasmine.currentEnv_.currentRunner_.suites()
+          const failureMessages = suites
+            .filter((suite) => requiredSuites.includes(suite.description))
             .map((suite) => suite.specs_.filter((spec) => spec.results_.failedCount > 0))
             .flat()
             .map(spec => `**${spec.suite.description}**: *${spec.description}*: ` +
