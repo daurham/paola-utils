@@ -6,7 +6,7 @@ module.exports = {
   repoCompletionColumnNames: ['onTimeTwiddlerPR'],
   skipLinting: true,
   runTests: (repoPath) => {
-    const strippedPath = repoPath.replace(path.resolve(__dirname, '../..'), '');
+    const strippedPath = repoPath.replace(process.cwd(), '');
     return cypress
       .run({
         config: {
@@ -17,6 +17,8 @@ module.exports = {
           supportFile: false,
           screenshotOnRunFailure: false,
           video: false,
+          numTestsKeptInMemory: 0,
+          watchForFileChanges: false,
         },
         configFile: false,
         quiet: true,
@@ -31,7 +33,9 @@ module.exports = {
           'the page is as beautiful as you want it to be',
         ];
         const failedTests = results.runs[0].tests.filter((test) =>
-          test.state === 'failed' && !ignoredTests.includes(test.title[test.title.length - 1])
+          test.state === 'failed' &&
+          test.title[0] !== 'Extra credit' &&
+          !ignoredTests.includes(test.title[test.title.length - 1])
         );
         if (
           failedTests[0] && failedTests[0].displayError && failedTests[0].displayError.startsWith(
