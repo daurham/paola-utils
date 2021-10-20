@@ -1,5 +1,6 @@
 /* eslint-disable no-restricted-syntax, no-await-in-loop, no-console */
-require('dotenv').config();
+// require('dotenv').config();
+require('dotenv').config({path: '../../.env'});
 const Bottleneck = require('bottleneck');
 const { DOC_ID_PULSE } = require('../../constants');
 const {
@@ -8,6 +9,7 @@ const {
   upsertSheetMetadata,
   // deleteSheetMetadata,
 } = require('../../googleSheets');
+
 const { sendEmailFromDraft } = require('../../googleMail');
 
 const EMAIL_SENDER_NAME = 'SEI Precourse';
@@ -39,9 +41,10 @@ async function sendEmails(
     filteredRecipients.forEach(({ student }) => console.info('> ', student.email));
     let recipients = filteredRecipients;
     if (testEmailAddress) {
+    console.log('testEmailAddress is:', testEmailAddress)
       if (filteredRecipients.length === 0) {
         recipients = [{
-          email: testEmailAddress,
+          student: {email: testEmailAddress},
           fields: {
             name: 'Tchicphillait',
             deadlineDate: '13/37',
