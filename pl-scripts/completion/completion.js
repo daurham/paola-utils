@@ -77,20 +77,19 @@ async function executeHTMLTestRunner(testRunnerPath, callback, showLogs) {
       '--disable-dev-shm-usage',
     ],
   });
-  const page = await browser.newPage();
-
-  let pageError;
-  page.on('pageerror', (err) => pageError = err);
-
-  if (showLogs) {
-    page.on('console', (c) =>
-      console.log(getTime(), '[Headless Browser]', c.text()),
-    );
-  }
-
-  await page.goto(`file://${testRunnerPath}`);
-
   try {
+    const page = await browser.newPage();
+
+    let pageError;
+    page.on('pageerror', (err) => pageError = err);
+
+    if (showLogs) {
+      page.on('console', (c) =>
+        console.log(getTime(), '[Headless Browser]', c.text()),
+      );
+    }
+
+    await page.goto(`file://${testRunnerPath}`);
     const result = await asyncTimeout(callback(page), TEST_TIME_LIMIT_MS);
     await browser.close();
     if (result instanceof Error) throw result;
