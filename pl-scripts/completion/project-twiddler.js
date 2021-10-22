@@ -47,7 +47,6 @@ module.exports = {
             runtimeErrorLines.map((line) => line.replace(/^\s+> /, '')).join('\n')
           );
         }
-        console.log(failedTests);
         return {
           repoCompletionChanges: {
             onTimeTwiddlerPR: results.totalPassed,
