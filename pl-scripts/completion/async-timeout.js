@@ -1,14 +1,17 @@
 class TimeoutError extends Error {}
 
 // Throw an error if a Promise doesn't resolve within the timeLimit
-function asyncTimeout(promise, timeLimit) {
+async function asyncTimeout(promise, timeLimit) {
+  let timeout;
   const timeoutPromise = new Promise((resolve) => {
-    const timeout = setTimeout(() => {
+    timeout = setTimeout(() => {
       clearTimeout(timeout);
       resolve(new TimeoutError(`Execution timed out after ${timeLimit}ms.`));
     }, timeLimit);
   });
-  return Promise.race([promise, timeoutPromise]);
+  const result = await Promise.race([promise, timeoutPromise]);
+  if (timeout) clearTimeout(timeout);
+  return result;
 }
 
 module.exports = {

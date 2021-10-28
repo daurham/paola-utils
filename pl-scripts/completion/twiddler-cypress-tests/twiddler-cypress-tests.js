@@ -21,9 +21,13 @@ var _window, _document;
 // tests are still executing, as it gets updated exactly at render-time
 var numberOfTweetsAtLastRender = 0;
 
+// Store check of initial body contents (before JS modifies elements)
+// in order to test for hardcoded HTML elements
+var htmlHasHardcodedContents = false;
+
 /**
-* Helpers
-*/
+ * Helpers
+ */
 function getCSSRules(ruleFilter) {
   var styleSheet = Array.from(_document.styleSheets)
     .filter(function(s) { return s.href && s.href.endsWith(CSS_PATH); })
@@ -33,7 +37,7 @@ function getCSSRules(ruleFilter) {
 }
 
 function getNewestRenderedTweetIndex() {
-  return new Promise(function(resolve) {
+  return new Promise(function(resolve, reject) {
     cy.get('.tweet').first().then(function($tweet) {
       var text = $tweet.text();
       for (var i = _window.streams.home.length - 1; i >= 0; i--) {
@@ -41,13 +45,23 @@ function getNewestRenderedTweetIndex() {
           return resolve(i);
         }
       }
+      reject(
+        'The message appearing in the first .tweet element on the page ' +
+        'was not found in any of the tweet data in streams.home.\n'
+      );
     });
   });
 }
 
+function formatOrdinal(num) {
+  if (num === 1) return '1st';
+  if (num === 2) return '2nd';
+  return num + 'th';
+}
+
 /**
-* Tests used in multiple places
-*/
+ * Tests used in multiple places
+ */
 var sharedTests = {
   noDuplicateTweetsRendered: function() {
     it('does not render duplicate Tweets', function() {
@@ -64,9 +78,14 @@ var sharedTests = {
   
   tweetsRenderInReverseChronologicalOrder: function() {
     it('displays Tweets in reverse chronological order (newest first)', function() {
-      getNewestRenderedTweetIndex().then(function(firstTweetIndex) {
         cy.get('.tweet').each(function($tweet, index) {
+        cy.wrap(getNewestRenderedTweetIndex()).then(function(firstTweetIndex) {
           var expectedTweet = _window.streams.home[firstTweetIndex - index];
+          var errorMessage = [
+            `The first .tweet found on the page was found at streams.home[${firstTweetIndex}],`,
+            `so the ${formatOrdinal(index + 1)} .tweet is expected to match streams.home[${firstTweetIndex - index}]`
+          ].join('\n');
+          expect(expectedTweet, errorMessage).not.to.be.undefined;
           expect($tweet).to.contain(expectedTweet.message);
         });
       });
@@ -75,7 +94,7 @@ var sharedTests = {
 
   pageDoesNotRefreshAfter: function(callback) {
     it('does not refresh the browser window', function() {
-      cy.intercept('*', function() {
+      cy.intercept('index.html*', function() {
         expect(false, 'A page reload has been detected').to.eq(true);
       });
       callback();
@@ -107,7 +126,7 @@ before(function() {
       _window = contentWindow;
       _document = contentWindow.document;
       // Update numberOfTweetsAtLastRender when tweets are added to the page
-      var observer = new MutationObserver(function(mutations) {
+      var tweetCountObserver = new MutationObserver(function(mutations) {
         if (mutations.some(function(mutation) {
           return Array.from(mutation.addedNodes).some(function(node) {
             return countElementsWithClass(node, 'tweet') > 0;
@@ -116,14 +135,25 @@ before(function() {
           numberOfTweetsAtLastRender = _window.streams.home.length;
         }
       });
-      observer.observe(contentWindow.document, { childList: true, subtree: true });
+      tweetCountObserver.observe(contentWindow.document, { childList: true, subtree: true });
+
+      var isBodyInitialized;
+      var initialHtmlObserver = new MutationObserver(function(mutations) {
+        if (contentWindow.document.body && !isBodyInitialized) {
+          htmlHasHardcodedContents = Array.from(_document.body.children).some(function(elem) {
+            return elem.id !== 'app' && elem.nodeName !== 'SCRIPT';
+          });
+          isBodyInitialized = true;
+        }
+      });
+      initialHtmlObserver.observe(contentWindow.document, { childList: true, subtree: true });
     }
   });
 });
 
 /**
-* The test suite begins!
-*/
+ * The test suite begins!
+ */
 describe('Project', function() {
   it('does not throw an error when loading the page', function() {
     // empty block: runtime errors will fail on the first test
@@ -140,6 +170,15 @@ describe('Project', function() {
       if (scriptContent.includes('window.Cypress')) return;
       expect(scriptContent).to.be.empty;
     });
+  });
+
+  it('does not contain any hardcoded HTML elements', function() {
+    const message = [
+      'The only HTML elements that should be hardcoded (coded into your .html file)',
+      'are a div with an ID of app, and a script tag to load app.js.',
+      'All other elements should be created from JavaScript within your app.js.\n'
+    ].join('\n');                  
+    expect(htmlHasHardcodedContents, message).not.to.be.true;
   });
 });
 
@@ -370,7 +409,11 @@ describe('Libraries', function() {
 describe('User Feed', function() {
   context('clicking on a username in a Tweet', function() {
     var selectedUsername;
+    var originalButtonText;
     before(function() {
+      cy.get('#update-feed').then(function($button) {
+        originalButtonText = $button.text();
+      });
       cy.get('.tweet .username').first().then(function($username) {
         selectedUsername = $username.text();
         $username.click();
@@ -388,10 +431,16 @@ describe('User Feed', function() {
     });
 
     describe('"Back" button', function() {
+      before(function() {
+        cy.get('#update-feed').click();
+      });
+
       it('switches from the User Feed back to the Home Feed', function() {
-        cy.get('#update-feed').click().then(function() {
-          expect(Cypress.$('.tweet').length).to.eq(numberOfTweetsAtLastRender);
-        });
+        expect(Cypress.$('.tweet').length).to.eq(numberOfTweetsAtLastRender);
+      });
+
+      it('switches its text from "Back" to its original value', function() {
+        cy.get('#update-feed').contains(originalButtonText);
       });
 
       sharedTests.noDuplicateTweetsRendered();
@@ -399,7 +448,7 @@ describe('User Feed', function() {
   });
 });
 
-describe('CSS Styling and Layout', function() {
+describe('Styling and Layout', function() {
   describe('Properties', function() {
     var requiredProperties = [
       'background-color',
@@ -431,6 +480,43 @@ describe('CSS Styling and Layout', function() {
     });
   });
 
+  it('includes a hover effect for icons', function() {
+    cy.get('.comment').eq(1).then(function($comment) {
+      var elem = $comment.get(0);
+      // check for CSS :hover rule
+      var matchingRules = getCSSRules(function(rule) {
+        if (!(rule instanceof _window.CSSStyleRule)) return false;
+        var selectors = rule.selectorText.split(',');
+        return rule.cssText && selectors.some(function(selector) {
+          return selector.trim().endsWith(':hover') &&
+            elem.matches(selector.trim().replace(/:hover$/, ''));
+        });
+      });
+      if (matchingRules.length > 0) {
+        expect(true, 'A CSS :hover rule is included').to.eq(true);
+        return;
+      }
+  
+      // check for JS hover handler instead if CSS rule isn't present
+      var styles = getComputedStyle(elem);
+      var stylesBefore = {};
+      var stylesAfter = {};
+      Object.assign(stylesBefore, styles);
+      
+      cy.get('.comment').eq(1).trigger('mouseover').then(function() {
+        var mouseOverMessage = 'The CSS of an icon should change on hover';
+        Object.assign(stylesAfter, styles);
+        cy.wrap(stylesBefore).should('not.deep.equal', stylesAfter, mouseOverMessage);
+  
+        cy.get('.comment').eq(1).trigger('mouseout').then(function() {
+          var mouseOutMessage = 'The CSS of an icon should change back to its initial value after hover';
+          Object.assign(stylesAfter, styles);
+          cy.wrap(stylesBefore).should('deep.equal', stylesAfter, mouseOutMessage);
+        });
+      });
+    });
+  });
+
   if (!Cypress.env('SKIP_FLAVOR_TEST')) {
     describe('Finishing up', function() {
       it('the page is as beautiful as you want it to be', function() {
@@ -456,7 +542,7 @@ describe('CSS Styling and Layout', function() {
 });
 
 if (!Cypress.env('SKIP_EXTRA_CREDIT')) {
-  xdescribe('Extra credit', function() {
+  describe('Extra credit', function() {
     describe('Friends list', function() {
       it('exists as a UL tag with an ID of "friends-list"', function() {
         cy.get('ul#friends-list').should('exist');
@@ -514,8 +600,9 @@ if (!Cypress.env('SKIP_EXTRA_CREDIT')) {
       it('has a button to submit the form', function() {
         var submitButton;
         cy.get('#new-tweet-form').then(function($form) {
-          submitButton = $form.find('button') || $form.find('input[type="submit"]');
-          expect(submitButton).to.not.be.undefined;
+          submitButton = $form.find('button');
+          if (!submitButton.length) submitButton = $form.find('input[type="submit"]');
+          expect(submitButton.length).to.not.be(0);
         });
       });
 
@@ -524,7 +611,9 @@ if (!Cypress.env('SKIP_EXTRA_CREDIT')) {
         cy.get('#new-tweet-form input[name="message"]').invoke('val', 'bar');
         var submitButton;
         cy.get('#new-tweet-form').then(function($form) {
-          submitButton = $form.find('button') || $form.find('input[type="submit"]');
+          submitButton = $form.find('button');
+          if (!submitButton.length) submitButton = $form.find('input[type="submit"]');
+          expect(submitButton.length).to.not.be(0);
           submitButton.click();
         });
         
@@ -542,7 +631,9 @@ if (!Cypress.env('SKIP_EXTRA_CREDIT')) {
             cy.get('#new-tweet-form input[name="message"]').invoke('val', testMessage);
             var submitButton;
             cy.get('#new-tweet-form').then(function($form) {
-              submitButton = $form.find('button') || $form.find('input[type="submit"]');
+              submitButton = $form.find('button');
+              if (!submitButton.length) submitButton = $form.find('input[type="submit"]');
+              expect(submitButton.length).to.not.be(0);
               submitButton.click();
             });
           });
