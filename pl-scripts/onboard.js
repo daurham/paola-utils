@@ -1,5 +1,8 @@
 /* eslint-disable no-console */
-require('dotenv').config();
+// require('dotenv').config();
+require('dotenv').config({path: '../../.env'});
+
+
 const { format } = require('date-fns');
 const Bottleneck = require('bottleneck');
 const { addStudentToGroup } = require('../googleGroups');
@@ -10,7 +13,8 @@ const { addStudentToCohort } = require('../learn');
 const { createChannelPerStudent, sendMessageToChannel } = require('../slack');
 const techMentors = require('../tech-mentors');
 const { getNewStudentsFromSFDC, hasIntakeFormCompleted } = require('./getNewStudentsFromSFDC');
-
+console.log(process.env);
+return;
 const {
   COHORT_ID,
   PRECOURSE_COHORT_START_DATE,
@@ -92,15 +96,15 @@ function getCurrentCohortWeek() {
   return Math.ceil((currentDate - new Date(PRECOURSE_COHORT_START_DATE)) / WEEK_DURATION_MS);
 }
 const currentCohortWeek = getCurrentCohortWeek();
-if (
-  currentCohortWeek < 1 || // no onboarding in W0
-  currentCohortWeek > 4 || // or after W4
-  // or after 5PM PT on Friday of W4 (5PM PT = midnight/1AM UTC next day)
-  (currentCohortWeek === 4 && currentDate.getUTCDay() > 5 && currentDate.getUTCHours() > 0)
-) {
-  console.error(`Cohort week out of range (${currentCohortWeek}), exiting`);
-  process.exit(0);
-}
+// if (
+//   currentCohortWeek < 1 || // no onboarding in W0
+//   currentCohortWeek > 4 || // or after W4
+//   // or after 5PM PT on Friday of W4 (5PM PT = midnight/1AM UTC next day)
+//   (currentCohortWeek === 4 && currentDate.getUTCDay() > 5 && currentDate.getUTCHours() > 0)
+// ) {
+//   console.error(`Cohort week out of range (${currentCohortWeek}), exiting`);
+//   process.exit(0);
+// }
 
 const googleGroupFullTime = `seipw${currentCohortWeek}@galvanize.com`;
 const googleGroupPartTime = currentCohortWeek <= 2
@@ -198,6 +202,7 @@ const addStudentsToRepoCompletionSheets = async (pulseDoc, pods) => {
 };
 
 const addStudentsToLearnCohort = (students) => Promise.all(
+
   students.map((student) => {
     const splitName = student.fullName.split(' ');
     const learnStudent = {
@@ -330,6 +335,8 @@ const formatSFDCStudentForRoster = (student) => {
   const newStudents = (await getNewStudentsFromSFDC())
     .map(formatSFDCStudentForRoster)
     .sort((a, b) => a.campus.toLowerCase().localeCompare(b.campus.toLowerCase()));
+  console.log('newStudents are:', newStudents);
+  return;
   const allEligibleNewStudents = newStudents.filter(hasIntakeFormCompleted);
   const eligibleNewStudents = allEligibleNewStudents.slice(0, MAX_STUDENTS_PER_RUN);
   const naughtyListStudents = newStudents.filter((student) => !hasIntakeFormCompleted(student));

@@ -1,5 +1,4 @@
-//require('dotenv').config();
-require('dotenv').config({path: '../../.env'});
+require('dotenv').config();
 const yargs = require('yargs');
 const emailDefinitions = require('./emailDefinitions');
 const sendEmails = require('./sendEmails');

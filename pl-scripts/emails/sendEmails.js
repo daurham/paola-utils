@@ -1,6 +1,5 @@
 /* eslint-disable no-restricted-syntax, no-await-in-loop, no-console */
-// require('dotenv').config();
-require('dotenv').config({path: '../../.env'});
+require('dotenv').config();
 const Bottleneck = require('bottleneck');
 const { DOC_ID_PULSE } = require('../../constants');
 const {
@@ -41,7 +40,6 @@ async function sendEmails(
     filteredRecipients.forEach(({ student }) => console.info('> ', student.email));
     let recipients = filteredRecipients;
     if (testEmailAddress) {
-    console.log('testEmailAddress is:', testEmailAddress)
       if (filteredRecipients.length === 0) {
         recipients = [{
           student: {email: testEmailAddress},
@@ -57,7 +55,7 @@ async function sendEmails(
         }];
       } else {
         recipients = [filteredRecipients[0]];
-        recipients[0].email = testEmailAddress;
+        recipients[0].student.email = testEmailAddress;
       }
     }
 

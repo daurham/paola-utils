@@ -1,6 +1,11 @@
 const { getNewStudentsFromSFDC, hasIntakeFormCompleted } = require('../getNewStudentsFromSFDC');
 const { getAllSlackUsers } = require('../../slack');
-const { LEARN_COHORT_ID, SLACK_JOIN_URL_STUB } = require('../../constants');
+const {
+  LEARN_COHORT_ID,
+  SLACK_JOIN_URL_STUB,
+  FULL_TIME_COURSE_START_DATE,
+  PART_TIME_COURSE_START_DATE
+} = require('../../constants');
 const {
   getDeadline,
   getMissedDeadlineStudents,
@@ -8,9 +13,10 @@ const {
   getModule2MissDetails,
   getModule3MissDetails,
 } = require('./missedDeadlines');
-const { getRosterStudents } = require('./getStudents');
+const { getRosterStudents, getRepoCompletionStudents } = require('./getStudents');
 
 const MERGE_FIELD_STUDENT_INFO_FORM_URL = 'www.tfaforms.com/369587?tfa_57=';
+
 
 const normalizeEmail = (email) => email.toLowerCase().replace(/\./g, '');
 const normalizeName = (name) => name.toLowerCase().replace(/\s/g, '');
@@ -106,5 +112,36 @@ module.exports = [{
         learnCohortId2: LEARN_COHORT_ID,
       },
     }));
+  },
+}, {
+  key: 'precourseComplete',
+  draftName: '🎉 Congratulations! You\'ve completed Precourse + Solution Video Password 🎉',
+  async getEmails() {
+    const students = (await getRepoCompletionStudents())
+      .filter((student)=> student.allComplete === 'Yes');
+    const formatDate = (date) => {
+      let ord = 'th';
+      if (date.getUTCDate() === '1') ord = 'st';
+      else if (date.getUTCDate() === '2') ord = 'nd';
+      else if (date.getUTCDate() === '3') ord = 'rd';
+      return date.toLocaleDateString('en-US', { timeZone: 'UTC', month: 'long', day: 'numeric' }) + ord;
+    };
+    const fullTimeDate = formatDate(new Date(FULL_TIME_COURSE_START_DATE));
+    const partTimeDate = formatDate(new Date(PART_TIME_COURSE_START_DATE));
+    return students.map((student) => {
+      student.campus = 'RPT Pacific';
+      const dateAndCourse = student.campus !== 'RPT Pacific'
+        ? fullTimeDate + ' Full Time'
+        : partTimeDate + ' Part Time';
+
+      return {
+        student,
+        fields: {
+          dateAndCourse,
+          learnCohortId1: LEARN_COHORT_ID,
+          learnCohortId2: LEARN_COHORT_ID,
+        }
+      };
+    });
   },
 }];
