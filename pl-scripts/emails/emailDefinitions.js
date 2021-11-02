@@ -129,7 +129,6 @@ module.exports = [{
     const fullTimeDate = formatDate(new Date(FULL_TIME_COURSE_START_DATE));
     const partTimeDate = formatDate(new Date(PART_TIME_COURSE_START_DATE));
     return students.map((student) => {
-      student.campus = 'RPT Pacific';
       const dateAndCourse = student.campus !== 'RPT Pacific'
         ? fullTimeDate + ' Full Time'
         : partTimeDate + ' Part Time';
