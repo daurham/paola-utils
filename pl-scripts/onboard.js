@@ -96,15 +96,15 @@ function getCurrentCohortWeek() {
   return Math.ceil((currentDate - new Date(PRECOURSE_COHORT_START_DATE)) / WEEK_DURATION_MS);
 }
 const currentCohortWeek = getCurrentCohortWeek();
-// if (
-//   currentCohortWeek < 1 || // no onboarding in W0
-//   currentCohortWeek > 4 || // or after W4
-//   // or after 5PM PT on Friday of W4 (5PM PT = midnight/1AM UTC next day)
-//   (currentCohortWeek === 4 && currentDate.getUTCDay() > 5 && currentDate.getUTCHours() > 0)
-// ) {
-//   console.error(`Cohort week out of range (${currentCohortWeek}), exiting`);
-//   process.exit(0);
-// }
+if (
+  currentCohortWeek < 1 || // no onboarding in W0
+  currentCohortWeek > 4 || // or after W4
+  // or after 5PM PT on Friday of W4 (5PM PT = midnight/1AM UTC next day)
+  (currentCohortWeek === 4 && currentDate.getUTCDay() > 5 && currentDate.getUTCHours() > 0)
+) {
+  console.error(`Cohort week out of range (${currentCohortWeek}), exiting`);
+  process.exit(0);
+}
 
 const googleGroupFullTime = `seipw${currentCohortWeek}@galvanize.com`;
 const googleGroupPartTime = currentCohortWeek <= 2
@@ -124,6 +124,7 @@ const isPartTime = (student) => !isFullTime(student);
 
 const formatStudentForRepoCompletion = (student, techMentor, rowIndex) => ({
   fullName: student.fullName,
+  preferredName: student.preferredFirstName,
   campus: student.campus,
   githubHandle: student.githubHandle,
   deadlineGroup: currentDeadlineGroup,
@@ -131,16 +132,15 @@ const formatStudentForRepoCompletion = (student, techMentor, rowIndex) => ({
   email: student.email,
   techMentor,
   // VBAFundingType: student.VBAFundingType,
-  // TODO: Maybe handle setting these to the proper formulas?
-  prepType: `=VLOOKUP(A${rowIndex},HRPTIV!A:BC,50,false)`, // student.selfReportedPrepartion,
+  prepType: student.selfReportedPrepartion,
   // NB: for this column to work on each new cohort,
   // the iferror in the formula has to be unwrapped to allow access
   hadLaserCoaching: `=IF(EQ(IFERROR(vlookup(A${rowIndex},` +
                     `IMPORTRANGE("https://docs.google.com/spreadsheets/d/1v3ve2aYtO6MsG6Zjp-SBX-ote6JdWVvuYekHUst2wWw","Laser Coached Students Enrolled!A2:A"),1,false),` +
                     `"No"), A${rowIndex}), "Yes", "No")`,
   numPrecourseEnrollments: `=MAX(COUNTIF('Precourse Enrollments Archive'!B:B,A${rowIndex}),` +
-                           `COUNTIF('Precourse Enrollments Archive'!D:D,C${rowIndex}),` +
-                           `COUNTIF('Precourse Enrollments Archive'!G:G,F${rowIndex})) + 1`,
+                           `COUNTIF('Precourse Enrollments Archive'!D:D,D${rowIndex}),` +
+                           `COUNTIF('Precourse Enrollments Archive'!G:G,G${rowIndex})) + 1`,
   koansMinReqs: 'No Fork',
   javascriptKoans: 'No Fork',
   testbuilder: 'No Fork',
@@ -148,16 +148,12 @@ const formatStudentForRepoCompletion = (student, techMentor, rowIndex) => ({
   underbarPartTwo: 'No Fork',
   twiddler: 'No Fork',
   recursion: 'No Fork',
-  partOneComplete: `=IF(AND(L${rowIndex}="Yes", M${rowIndex}>=26, N${rowIndex}>=3323, N${rowIndex}<=3329, O${rowIndex}=61), "Yes", "No")`,
-  partTwoComplete: `=IF(AND(P${rowIndex}=65, Q${rowIndex}>=3.5, ISNUMBER(Q${rowIndex})), "Yes", "No")`,
-  partThreeComplete: `=IF(AND(R${rowIndex}>=2, ISNUMBER(R${rowIndex})),"Yes", "No")`,
-  allComplete: `=IF(AND(S${rowIndex}="Yes",T${rowIndex}="Yes",U${rowIndex}="Yes"),"Yes","No")`,
-  // onTimeKoansPR: student.onTimeKoansPR,
-  // onTimeTestbuilderPR: student.onTimeTestbuilderPR,
-  // onTimeUnderbarOnePR: student.onTimeUnderbarOnePR,
-  onTimeTwiddlerPR: 'No Fork',
-  // onTimeRecursionPR: student.onTimeRecursionPR,
-  // notes: student.notes,
+  partOneComplete: `=IF(AND(M${rowIndex}="Yes", N${rowIndex}>=26, O${rowIndex}>=3323, O${rowIndex}<=3329, P${rowIndex}=61), "Yes", "No")`,
+  partTwoComplete: `=IF(AND(Q${rowIndex}=65, R${rowIndex}>=48, ISNUMBER(R${rowIndex})), "Yes", "No")`,
+  partThreeComplete: `=IF(AND(S${rowIndex}>=2, ISNUMBER(S${rowIndex})),"Yes", "No")`,
+  allComplete: `=IF(AND(T${rowIndex}="Yes",U${rowIndex}="Yes",V${rowIndex}="Yes"),"Yes","No")`,
+  completedDIF: `=IF(L${rowIndex} = 1, "N/A", IF(IFNA(MATCH(A${rowIndex}, 'Deferral Intake Form'!B:B, 0), "Not found") <> "Not found",` +
+                `HYPERLINK(CONCAT("#gid=1881266534&range=", MATCH(A${rowIndex}, 'Deferral Intake Form'!B:B, 0) & ":" & MATCH(A${rowIndex}, 'Deferral Intake Form'!B:B, 0)), "See responses"), "Not found"))`,
 });
 
 const weightedPodSize = (pod) => Math.ceil(pod.podSize / (pod.podSizeRatio || 1));
@@ -237,7 +233,7 @@ const addStudentsToGitHub = async (students) => {
   await createBranches(GITHUB_ORG_NAME, `${COHORT_ID}-recursion`, gitHandles);
 };
 
-const sendEmailsToStudents = async (students) => {
+const sendWelcomeEmails = async (students) => {
   const PROGRAM_EMAIL = 'sei.precourse@galvanize.com';
   const PROGRAM_NAME = 'SEI Precourse';
   const alias = { name: PROGRAM_NAME, email: PROGRAM_EMAIL };
@@ -301,7 +297,7 @@ const sendEmailsToStudents = async (students) => {
   }
 };
 
-const sendInternalSlackMessage = async (newStudents, pods) => {
+const reportNewStudentsToSlack = async (newStudents, pods) => {
   let slackMessage = `🎉 ${newStudents.length} new student${newStudents.length !== 1 ? 's' : ''} added! 🎉\n`;
   slackMessage += pods
     .filter((pod) => pod.repoCompletionRowsToAdd.length > 0)
@@ -405,13 +401,13 @@ const formatSFDCStudentForRoster = (student) => {
     }
     try {
       console.info('Sending welcome emails to new students...');
-      await sendEmailsToStudents(eligibleNewStudents);
+      await sendWelcomeEmails(eligibleNewStudents);
     } catch (err) {
       console.error('Error sending welcome emails to new students!');
       console.error(err);
     }
     console.info('Reporting to Slack...');
-    await sendInternalSlackMessage(eligibleNewStudents, pods);
+    await reportNewStudentsToSlack(eligibleNewStudents, pods);
   }
 
   console.info('Done!');
