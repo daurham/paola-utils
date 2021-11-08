@@ -1,7 +1,5 @@
 /* eslint-disable no-console */
-// require('dotenv').config();
-require('dotenv').config({path: '../../.env'});
-
+require('dotenv').config();
 
 const { format } = require('date-fns');
 const Bottleneck = require('bottleneck');
@@ -197,7 +195,6 @@ const addStudentsToRepoCompletionSheets = async (pulseDoc, pods) => {
 };
 
 const addStudentsToLearnCohort = (students) => Promise.all(
-
   students.map((student) => {
     const splitName = student.fullName.split(' ');
     const learnStudent = {
@@ -330,8 +327,6 @@ const formatSFDCStudentForRoster = (student) => {
   const newStudents = (await getNewStudentsFromSFDC())
     .map(formatSFDCStudentForRoster)
     .sort((a, b) => a.campus.toLowerCase().localeCompare(b.campus.toLowerCase()));
-  console.log('newStudents are:', newStudents);
-  return;
   const allEligibleNewStudents = newStudents.filter(hasIntakeFormCompleted);
   const eligibleNewStudents = allEligibleNewStudents.slice(0, MAX_STUDENTS_PER_RUN);
   const naughtyListStudents = newStudents.filter((student) => !hasIntakeFormCompleted(student));
