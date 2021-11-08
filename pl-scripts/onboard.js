@@ -26,7 +26,7 @@ const {
   SHEET_ID_HRPTIV_NAUGHTY_LIST,
 } = require('../constants');
 
-const MAX_STUDENTS_PER_RUN = 1;
+const MAX_STUDENTS_PER_RUN = 30;
 
 const NAUGHTY_LIST_HEADERS = [
   'fullName',
