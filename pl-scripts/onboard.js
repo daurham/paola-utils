@@ -13,8 +13,7 @@ const { addStudentToCohort } = require('../learn');
 const { createChannelPerStudent, sendMessageToChannel } = require('../slack');
 const techMentors = require('../tech-mentors');
 const { getNewStudentsFromSFDC, hasIntakeFormCompleted } = require('./getNewStudentsFromSFDC');
-console.log(process.env);
-return;
+
 const {
   COHORT_ID,
   PRECOURSE_COHORT_START_DATE,
@@ -29,7 +28,7 @@ const {
   SHEET_ID_HRPTIV_NAUGHTY_LIST,
 } = require('../constants');
 
-const MAX_STUDENTS_PER_RUN = 50;
+const MAX_STUDENTS_PER_RUN = 1;
 
 const NAUGHTY_LIST_HEADERS = [
   'fullName',
