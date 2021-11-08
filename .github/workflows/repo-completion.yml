@@ -1,4 +1,4 @@
-name: repo-completion
+name: Repo Completion
 on:
   workflow_dispatch:
     inputs:
