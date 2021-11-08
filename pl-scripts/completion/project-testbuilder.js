@@ -4,7 +4,6 @@ const MESSAGE_FINAL_STEP_READY = 'STEP FOUR:';
 const MESSAGE_SUITE_COMPLETED =
   'Congratulations! You have finished the exercise!';
 const APPEND_TO_TEST_COUNT_ON_INCOMPLETE = ' ❌';
-const APPEND_TO_TEST_COUNT_ON_NESTED_SUITES = ' 🤔';
 
 module.exports = {
   repoName: 'testbuilder',
@@ -73,7 +72,6 @@ module.exports = {
       return executedTests >= definedTests;
     });
     
-    const failureMessages = [];
     let testsPassing =
       Number(
         await page.$$eval(

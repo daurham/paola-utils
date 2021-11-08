@@ -323,8 +323,10 @@ describe('Tweet UI Component', function() {
       _window.streams.home[index] = new Proxy(tweet, propertySpy);
     });
 
+    var numberOfTweetsBeforeUpdate = numberOfTweetsAtLastRender;
     cy.get('#update-feed').click().then(function() {
-      expect(propertyAccessCount).to.be.at.least(numberOfTweetsAtLastRender);
+      var numberOfNewTweets = numberOfTweetsAtLastRender - numberOfTweetsBeforeUpdate;
+      expect(propertyAccessCount).to.be.at.least(numberOfNewTweets);
     });
   });
 
@@ -602,7 +604,7 @@ if (!Cypress.env('SKIP_EXTRA_CREDIT')) {
         cy.get('#new-tweet-form').then(function($form) {
           submitButton = $form.find('button');
           if (!submitButton.length) submitButton = $form.find('input[type="submit"]');
-          expect(submitButton.length).to.not.be(0);
+          expect(submitButton.length).to.not.equal(0);
         });
       });
 
@@ -613,7 +615,7 @@ if (!Cypress.env('SKIP_EXTRA_CREDIT')) {
         cy.get('#new-tweet-form').then(function($form) {
           submitButton = $form.find('button');
           if (!submitButton.length) submitButton = $form.find('input[type="submit"]');
-          expect(submitButton.length).to.not.be(0);
+          expect(submitButton.length).to.not.equal(0);
           submitButton.click();
         });
         
@@ -633,7 +635,7 @@ if (!Cypress.env('SKIP_EXTRA_CREDIT')) {
             cy.get('#new-tweet-form').then(function($form) {
               submitButton = $form.find('button');
               if (!submitButton.length) submitButton = $form.find('input[type="submit"]');
-              expect(submitButton.length).to.not.be(0);
+              expect(submitButton.length).to.not.equal(0);
               submitButton.click();
             });
           });
