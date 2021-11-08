@@ -309,7 +309,7 @@ const formatSFDCStudentForRoster = (student) => {
   let { campus } = student;
   if (student.productCode.includes('RFT')) campus = 'RFT Pacific';
   if (student.productCode.includes('RFE')) campus = 'RFT Eastern';
-  if (student.productCode.includes('RPT')) campus = 'RPT Pacific';
+  if (student.productCode.includes('RPP')) campus = 'RPT Pacific';
   return {
     ...student,
     campus,
