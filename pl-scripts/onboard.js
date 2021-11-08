@@ -147,8 +147,8 @@ const formatStudentForRepoCompletion = (student, techMentor, rowIndex) => ({
   underbarPartTwo: 'No Fork',
   twiddler: 'No Fork',
   recursion: 'No Fork',
-  partOneComplete: `=IF(AND(M${rowIndex}="Yes", N${rowIndex}>=26, O${rowIndex}>=3323, O${rowIndex}<=3329, P${rowIndex}=61), "Yes", "No")`,
-  partTwoComplete: `=IF(AND(Q${rowIndex}=65, R${rowIndex}>=48, ISNUMBER(R${rowIndex})), "Yes", "No")`,
+  partOneComplete: `=IF(AND(M${rowIndex}="Yes", N${rowIndex}>=26, O${rowIndex}>=3323, O${rowIndex}<=3329, P${rowIndex}=63), "Yes", "No")`,
+  partTwoComplete: `=IF(AND(Q${rowIndex}=67, R${rowIndex}>=48, ISNUMBER(R${rowIndex})), "Yes", "No")`,
   partThreeComplete: `=IF(AND(S${rowIndex}>=2, ISNUMBER(S${rowIndex})),"Yes", "No")`,
   allComplete: `=IF(AND(T${rowIndex}="Yes",U${rowIndex}="Yes",V${rowIndex}="Yes"),"Yes","No")`,
   completedDIF: `=IF(L${rowIndex} = 1, "N/A", IF(IFNA(MATCH(A${rowIndex}, 'Deferral Intake Form'!B:B, 0), "Not found") <> "Not found",` +
