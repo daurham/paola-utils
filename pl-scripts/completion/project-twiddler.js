@@ -49,7 +49,7 @@ module.exports = {
         }
         return {
           repoCompletionChanges: {
-            onTimeTwiddlerPR: results.totalPassed,
+            twiddler: results.totalPassed,
           },
           failureMessages: failedTests.map((test) => `**${test.title[0]}**: ${test.title.length === 2 ? test.title[1] : `*${test.title[1]}*: ${test.title.slice(2).join(': ')}`}`),
         };
