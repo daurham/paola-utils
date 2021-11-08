@@ -29,6 +29,6 @@ jobs:
           SFDC_LOGIN_URL: ${{ secrets.SFDC_LOGIN_URL }}
           SFDC_USERNAME: ${{ secrets.SFDC_USERNAME }}
           SFDC_PASSWORD: ${{ secrets.SFDC_PASSWORD }}
-          GIT_AUTH_TOKEN: ${{ secrets.GIT_AUTH_TOKEN }}
+          GITHUB_AUTH_TOKEN: ${{ secrets.GIT_AUTH_TOKEN }}
           LEARN_TOKEN: ${{ secrets.LEARN_TOKEN }}
           SLACK_TOKEN: ${{ secrets.SLACK_TOKEN }}
