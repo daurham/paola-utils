@@ -6,7 +6,7 @@ const { SLACK_TM_EMAILS } = require('../constants');
 // Limit to max of Tier 2 request rates (20 req/min)
 const rateLimiter = new Bottleneck({
   maxConcurrent: 1,
-  minTime: 3000,
+  minTime: 6000,
 });
 
 function slackAPIRequest(endpoint, method, body) {
