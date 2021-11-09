@@ -6,7 +6,7 @@ const { SLACK_TM_EMAILS } = require('../constants');
 // Limit to max of Tier 2 request rates (20 req/min)
 const rateLimiter = new Bottleneck({
   maxConcurrent: 1,
-  minTime: 6000,
+  minTime: 3000,
 });
 
 function slackAPIRequest(endpoint, method, body) {
@@ -88,28 +88,27 @@ const getTechMentorUserIDs = async () => {
 
 const createChannelPerStudent = async (nameList) => {
   const formattedNames = formatListOfNames(nameList);
-  return Promise.all(
-    formattedNames.map(async (name) => {
-      const result = await createChannel(name); // Tier 2
-      if (!result.ok) {
-        console.warn('Failed to create channel for', name);
-        console.warn(result);
-        return;
-      }
-      console.info('Created channel', result.channel.id, 'for', name);
-      const purposeSet = await setChannelPurpose( // Tier 2
-        result.channel.id,
-        'This channel is where you will interact with the Precourse team regarding technical questions. '
-        + 'TMs will respond to help desk and reach out about your progress throughout the course.',
-      );
-      if (!purposeSet.ok) console.warn(result.channel.id, 'Failed to set channel purpose', purposeSet);
-      const topicSet = await setChannelTopic(result.channel.id, 'Your personal channel with the Precourse Team.'); // Tier 2
-      if (!topicSet.ok) console.warn(result.channel.id, 'Failed to set channel topic', topicSet);
-      const techMentorUserIDs = await getTechMentorUserIDs(); // Tier 2
-      const invited = await inviteUsersToChannel(result.channel.id, techMentorUserIDs); // Tier 3
-      if (!invited.ok) console.warn(result.channel.id, 'Failed to invite users to channel', invited);
-    }),
-  );
+  for (let name of formattedNames) {
+    const result = await createChannel(name); // Tier 2
+    if (!result.ok) {
+      console.warn('Failed to create channel for', name);
+      console.warn(result);
+      return;
+    }
+    console.info('Created channel', result.channel.id, 'for', name);
+    const purposeSet = await setChannelPurpose( // Tier 2
+      result.channel.id,
+      'This channel is where you will interact with the Precourse team regarding technical questions. '
+      + 'TMs will respond to help desk and reach out about your progress throughout the course.',
+    );
+    if (!purposeSet.ok) console.warn(result.channel.id, 'Failed to set channel purpose', purposeSet);
+    const topicSet = await setChannelTopic(result.channel.id, 'Your personal channel with the Precourse Team.'); // Tier 2
+    if (!topicSet.ok) console.warn(result.channel.id, 'Failed to set channel topic', topicSet);
+    const techMentorUserIDs = await getTechMentorUserIDs(); // Tier 2
+    const invited = await inviteUsersToChannel(result.channel.id, techMentorUserIDs); // Tier 3
+    if (!invited.ok) console.warn(result.channel.id, 'Failed to invite users to channel', invited);
+  }
+  return true;
 };
 // const inviteNewTmsToChannels = async () => {}; // TODO?
 // const sendMessageViaDM = async () => {}; // TODO?
