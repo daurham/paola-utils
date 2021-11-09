@@ -101,6 +101,51 @@ async function executeHTMLTestRunner(testRunnerPath, callback, showLogs) {
   }
 }
 
+async function testProject({
+  project,
+  localRepoPath,
+  verbose,
+  logPrefix = '',
+}) {
+  let lintErrors, failureMessages, repoCompletionChanges, runtimeError;
+
+  if (!project.skipLinting) {
+    console.info(getTime(), logPrefix, 'Running linter on project...');
+    lintErrors = await lintProject(localRepoPath);
+  }
+
+  console.info(getTime(), logPrefix, 'Executing test runner...');
+  try {
+    let testRunnerResults = {};
+    if (project.testRunnerFileName) {
+      // Preferentially use an HTML testRunnerFileName in conjunction with
+      // a getTestResults function that runs on the page
+      testRunnerResults = await executeHTMLTestRunner(
+        path.join(localRepoPath, project.testRunnerFileName),
+        project.getTestResults,
+        verbose,
+      );
+    } else if (project.runTests) {
+      // If there's no HTML test runner, use a supplied runTests function
+      testRunnerResults = await project.runTests(localRepoPath);
+    }
+    failureMessages = testRunnerResults.failureMessages;
+    repoCompletionChanges = testRunnerResults.repoCompletionChanges;
+    runtimeError = testRunnerResults.error;
+  } catch (err) {
+    if (verbose) console.error(err);
+    const cellValue = {
+      value:
+        err instanceof TimeoutError ? CELL_VALUE_TIMEOUT : CELL_VALUE_ERROR,
+      note: `${err.name}: ${err.message}`,
+    };
+    repoCompletionChanges = getDefaultProjectValues(project.repoCompletionColumnNames, cellValue);
+    runtimeError = err;
+  }
+
+  return { lintErrors, failureMessages, repoCompletionChanges, runtimeError };
+}
+
 async function fetchAndTestProject({
   githubHandle,
   project,
@@ -124,43 +169,16 @@ async function fetchAndTestProject({
   );
   console.info(getTime(), logPrefix, GIT_RESPONSE_LOG_STRINGS[gitResult.code]);
 
-  let repoCompletionChanges, lintErrors, runtimeError;
-  let testRunnerResults = {};
+  let lintErrors, failureMessages, repoCompletionChanges, runtimeError;
   if (
     gitResult.code === GIT_RETURN_CODE.REPO_CLONED ||
     gitResult.code === GIT_RETURN_CODE.REPO_PULLED
   ) {
-    if (!project.skipLinting) {
-      console.info(getTime(), logPrefix, 'Running linter on project...');
-      lintErrors = await lintProject(localRepoPath);
-    }
-
-    console.info(getTime(), logPrefix, 'Executing test runner...');
-    try {
-      if (project.testRunnerFileName) {
-        // Preferentially use an HTML testRunnerFileName in conjunction with
-        // a getTestResults function that runs on the page
-        testRunnerResults = await executeHTMLTestRunner(
-          path.join(localRepoPath, project.testRunnerFileName),
-          project.getTestResults,
-          verbose,
-        );
-      } else if (project.runTests) {
-        // If there's no HTML test runner, use a supplied runTests function
-        testRunnerResults = await project.runTests(path.join(localRepoPath));
-      }
-      repoCompletionChanges = testRunnerResults.repoCompletionChanges;
-      runtimeError = testRunnerResults.error;
-    } catch (err) {
-      if (verbose) console.error(err);
-      const cellValue = {
-        value:
-          err instanceof TimeoutError ? CELL_VALUE_TIMEOUT : CELL_VALUE_ERROR,
-        note: `${err.name}: ${err.message}`,
-      };
-      repoCompletionChanges = getDefaultProjectValues(project.repoCompletionColumnNames, cellValue);
-      runtimeError = err;
-    }
+    const result = await testProject({ project, localRepoPath, verbose, logPrefix });
+    lintErrors = result.lintErrors;
+    failureMessages = result.failureMessages;
+    repoCompletionChanges = result.repoCompletionChanges;
+    runtimeError = result.runtimeError;
   } else if (gitResult.code === GIT_RETURN_CODE.REPO_NOT_FOUND) {
     repoCompletionChanges = getDefaultProjectValues(project.repoCompletionColumnNames, CELL_VALUE_NO_FORK);
   }
@@ -170,7 +188,7 @@ async function fetchAndTestProject({
     lintErrors: lintErrors || [],
     runtimeError,
     repoCompletionChanges: repoCompletionChanges || {},
-    failureMessages: testRunnerResults.failureMessages,
+    failureMessages,
   };
 }
 
@@ -292,6 +310,7 @@ async function updateRepoCompletionWorksheets({
 }
 
 module.exports = {
+  testProject,
   fetchAndTestProject,
   updateRepoCompletionWorksheets,
 };

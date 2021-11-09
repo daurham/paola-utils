@@ -1,20 +1,29 @@
+const { testProject } = require('./completion');
+const projectDefinitions = require('./project-definitions');
+
+const projectName = process.argv[2];
+const projectPath = process.argv[3];
 console.log('check-pull-request called with args:');
-console.log(process.argv);
+console.log(projectName, projectPath);
+
+if (!projectDefinitions[projectName]) {
+  console.log(`unknown project name: ${projectName}, exiting`);
+  process.exit(1);
+}
 
 console.log('env:');
 console.log(process.env);
 
-const { fetchAndTestProject } = require('./completion');
-const projectDefinitions = require('./project-definitions');
 
 (async () => {
-  console.log('actual work goes here');
-  // const result = await fetchAndTestProject({
-  //   githubHandle,
-  //   project: projectDefinitions[projectName],
-  //   cohortId,
-  //   localPathToStudentRepos: '/app/student-repos',
-  // });
+  const result = await testProject({
+    project: projectDefinitions[projectName],
+    localRepoPath: projectPath,
+    verbose: true,
+  });
+  const message = generateResultsMessage(result, projectName);
+  console.log(result);
+  console.log(message);
   // if (result.gitCommitHash) {
   //   if (result.runtimeError && result.runtimeError.message && (
   //     result.runtimeError.message.includes('Cypress') ||
