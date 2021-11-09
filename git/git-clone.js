@@ -58,7 +58,6 @@ async function cloneOrPullRepository(localPath, githubPath, previousSHA) {
         `git clone ${getRepositoryURL(githubPath)} ${localPath} --depth 1`,
         (err) => {
           if (err) {
-            console.log(err);
             resolve({
               hash: undefined,
               code: GIT_RETURN_CODE.REPO_NOT_FOUND,
