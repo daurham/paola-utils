@@ -56,7 +56,7 @@ module.exports = [{
   draftName: '[Action Required] SEI Precourse Slack',
   async getEmails() {
     const students = await getMissingSlackUsers();
-    const staleStudents = students.filter((s) => numDaysAgo(s.dateAddedToPrecourse) > 1);
+    const staleStudents = students.filter((s) => numDaysAgo(s.dateAddedToPrecourse) >= 1);
     return staleStudents.map((student) => ({
       student,
       fields: {
