@@ -3,7 +3,7 @@ const path = require('path');
 
 module.exports = {
   repoName: 'twiddler',
-  repoCompletionColumnNames: ['onTimeTwiddlerPR'],
+  repoCompletionColumnNames: ['twiddler'],
   skipLinting: true,
   runTests: (repoPath) => {
     const strippedPath = repoPath.replace(process.cwd(), '');
