@@ -19,17 +19,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
       - uses: actions/setup-node@v2
         with:
           node-version: '14'
+          
       - uses: actions/cache@v2
+        id: cache
         with:
           path: |
             **/node_modules
             /home/runner/.cache/Cypress
           key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}-v2
+
       - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
         run: yarn install
+        
       - name: Run repo completion
         run: xvfb-run --auto-servernum node pl-scripts/completion/cli.js --cohort ${{ github.event.inputs.cohort }} --tech-mentors ${{ github.event.inputs.tech_mentors }} --projects ${{ github.event.inputs.projects }}
         env:
