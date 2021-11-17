@@ -1,0 +1,31 @@
+name: Invite Student to GitHub
+on:
+  workflow_dispatch:
+    inputs:
+      handle:
+        description: 'GitHub handle to invite'
+        required: true
+jobs:
+  invite-student-to-github:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v2
+        with:
+          node-version: '14'
+
+      - uses: actions/cache@v2
+        id: cache
+        with:
+          path: '**/node_modules'
+          key: ${{ runner.os }}-modules-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: yarn install
+        
+      - name: Invite student to GitHub
+        run: node pl-scripts/inviteToGitHub.js ${{ github.event.inputs.handle }}
+        env:
+          GITHUB_AUTH_TOKEN: ${{ secrets.GIT_AUTH_TOKEN }}
