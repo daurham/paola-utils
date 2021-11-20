@@ -15,19 +15,20 @@ module.exports = {
             'About Functions',
             'About Objects',
           ];
-          const hasMinReqs = requiredSuites.every((suiteName) =>
-            suites.some(
-              (suite) =>
-                suite.description === suiteName &&
-                suite.results().failedCount === 0,
-            ),
-          );
+          const passingSuites = suites.filter((suite) => suite.results().failedCount === 0).map((suite) => suite.description);
+          const missingSuites = requiredSuites.filter((suiteName) => !passingSuites.includes(suiteName));
+          const hasMinReqs = missingSuites.length === 0;
           const failureMessages = suites
             .filter((suite) => requiredSuites.includes(suite.description))
             .map((suite) => suite.specs_.filter((spec) => spec.results_.failedCount > 0))
             .flat()
             .map(spec => `**${spec.suite.description}**: *${spec.description}*: ` +
               `\`${spec.results_.items_.find(res => !res.passed_).message}\``);
+          if (!hasMinReqs) {
+            failureMessages.push(
+              `The following required sections are not complete: ${missingSuites.join(', ')}`
+            );
+          }
           resolve({
             repoCompletionChanges: {
               koansMinReqs: hasMinReqs ? 'Yes' : 'No',
