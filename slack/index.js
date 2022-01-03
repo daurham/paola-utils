@@ -10,6 +10,9 @@ const rateLimiter = new Bottleneck({
 });
 
 function slackAPIRequest(endpoint, method, body) {
+  if (!process.env.SLACK_TOKEN) {
+    throw new Error('Required env var SLACK_TOKEN is missing!');
+  }
   const headers = {
     Authorization: `Bearer ${process.env.SLACK_TOKEN}`,
     'Content-Type': 'application/json; charset=utf-8',
