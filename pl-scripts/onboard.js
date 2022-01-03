@@ -24,9 +24,22 @@ const {
   DOC_ID_PULSE,
   SHEET_ID_HRPTIV_ROSTER,
   SHEET_ID_HRPTIV_NAUGHTY_LIST,
+  TEST_COUNT_KOANS,
+  TEST_COUNT_TESTBUILDER_MIN,
+  TEST_COUNT_TESTBUILDER_MAX,
+  TEST_COUNT_UNDERBAR_PART_ONE,
+  TEST_COUNT_UNDERBAR_PART_TWO,
+  TEST_COUNT_TWIDDLER,
+  TEST_COUNT_RECURSION,
 } = require('../constants');
 
 const MAX_STUDENTS_PER_RUN = 30;
+const PRODUCT_CODE_CAMPUS_OVERRIDES = {
+  RFT: 'RFT Pacific',
+  RFE: 'RFT Eastern',
+  RPP: 'RPT Pacific',
+  RFC: 'RFT Central',
+};
 
 const NAUGHTY_LIST_HEADERS = [
   'fullName',
@@ -145,9 +158,11 @@ const formatStudentForRepoCompletion = (student, techMentor, rowIndex) => ({
   underbarPartTwo: 'No Fork',
   twiddler: 'No Fork',
   recursion: 'No Fork',
-  partOneComplete: `=IF(AND(M${rowIndex}="Yes", N${rowIndex}>=26, O${rowIndex}>=3323, O${rowIndex}<=3329, P${rowIndex}=63), "Yes", "No")`,
-  partTwoComplete: `=IF(AND(Q${rowIndex}=67, R${rowIndex}>=48, ISNUMBER(R${rowIndex})), "Yes", "No")`,
-  partThreeComplete: `=IF(AND(S${rowIndex}>=2, ISNUMBER(S${rowIndex})),"Yes", "No")`,
+  partOneComplete: `=IF(AND(M${rowIndex}="Yes", N${rowIndex}>=${TEST_COUNT_KOANS},` +
+                   `O${rowIndex}>=${TEST_COUNT_TESTBUILDER_MIN}, O${rowIndex}<=${TEST_COUNT_TESTBUILDER_MAX},` +
+                   `P${rowIndex}=${TEST_COUNT_UNDERBAR_PART_ONE}), "Yes", "No")`,
+  partTwoComplete: `=IF(AND(Q${rowIndex}=${TEST_COUNT_UNDERBAR_PART_TWO}, R${rowIndex}>=${TEST_COUNT_TWIDDLER}, ISNUMBER(R${rowIndex})), "Yes", "No")`,
+  partThreeComplete: `=IF(AND(S${rowIndex}>=${TEST_COUNT_RECURSION}, ISNUMBER(S${rowIndex})),"Yes", "No")`,
   allComplete: `=IF(AND(T${rowIndex}="Yes",U${rowIndex}="Yes",V${rowIndex}="Yes"),"Yes","No")`,
   completedDIF: `=IF(L${rowIndex} = 1, "N/A", IF(IFNA(MATCH(A${rowIndex}, 'Deferral Intake Form'!B:B, 0), "Not found") <> "Not found",` +
                 `HYPERLINK(CONCAT("#gid=1881266534&range=", MATCH(A${rowIndex}, 'Deferral Intake Form'!B:B, 0) & ":" & MATCH(A${rowIndex}, 'Deferral Intake Form'!B:B, 0)), "See responses"), "Not found"))`,
@@ -307,9 +322,11 @@ const reportNewStudentsToSlack = async (newStudents, pods) => {
 
 const formatSFDCStudentForRoster = (student) => {
   let { campus } = student;
-  if (student.productCode.includes('RFT')) campus = 'RFT Pacific';
-  if (student.productCode.includes('RFE')) campus = 'RFT Eastern';
-  if (student.productCode.includes('RPP')) campus = 'RPT Pacific';
+  Object.keys(PRODUCT_CODE_CAMPUS_OVERRIDES).forEach((key) => {
+    if (student.productCode.includes(key)) {
+      campus = PRODUCT_CODE_CAMPUS_OVERRIDES[key];
+    }
+  });
   return {
     ...student,
     campus,

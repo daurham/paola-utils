@@ -52,6 +52,15 @@ module.exports = {
   // Workspace 2 (2202)
   SLACK_JOIN_URL_STUB: 'join.slack.com/t/sei-opr/shared_invite/zt-n8sr33fp-WgI39v3Ev0EhW1ixyws1_w',
 
+  /* Test counts for repo completion formulas */
+  TEST_COUNT_KOANS: 26,
+  TEST_COUNT_TESTBUILDER_MIN: 3323,
+  TEST_COUNT_TESTBUILDER_MAX: 3329,
+  TEST_COUNT_UNDERBAR_PART_ONE: 63,
+  TEST_COUNT_UNDERBAR_PART_TWO: 67,
+  TEST_COUNT_TWIDDLER: 48,
+  TEST_COUNT_RECURSION: 2,
+
   /* Salesforce */
   SFDC_OPPTY_RECORD_ID: '012j0000000qVAP',
   SFDC_FULL_TIME_COURSE_TYPE: '12 Week',
