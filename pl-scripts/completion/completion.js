@@ -1,6 +1,6 @@
 const fs = require('fs');
 const path = require('path');
-const puppeteer = require('puppeteer');
+const executeInHeadlessBrowser = require('../../puppeteer');
 const { CLIEngine } = require('eslint');
 const {
   loadGoogleSpreadsheet,
@@ -69,36 +69,16 @@ async function executeHTMLTestRunner(testRunnerPath, callback, showLogs) {
   if (!fs.existsSync(testRunnerPath)) {
     throw new Error(`Test runner does not exist: ${testRunnerPath}`);
   }
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-    ],
-  });
-  try {
-    const page = await browser.newPage();
-
+  return executeInHeadlessBrowser(async (page) => {
     let pageError;
-    page.on('pageerror', (err) => pageError = err);
-
-    if (showLogs) {
-      page.on('console', (c) =>
-        console.log(getTime(), '[Headless Browser]', c.text()),
-      );
-    }
+    page.on('pageerror', (err) => { pageError = err; });
 
     await page.goto(`file://${testRunnerPath}`);
     const result = await asyncTimeout(callback(page), TEST_TIME_LIMIT_MS);
-    await browser.close();
     if (result instanceof Error) throw result;
     result.error = pageError;
     return result;
-  } catch (err) {
-    await browser.close();
-    throw err;
-  }
+  }, showLogs);
 }
 
 async function testProject({
