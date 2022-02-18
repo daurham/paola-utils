@@ -1,22 +1,22 @@
 module.exports = {
   /* Cohort-specific config and dates */
-  COHORT_ID: 'seip2202',
-  PRECOURSE_COHORT_START_DATE: '2022-01-03',
-  FULL_TIME_COURSE_START_DATE: '2022-02-21',
-  PART_TIME_COURSE_START_DATE: '2022-02-21',
+  COHORT_ID: 'seip2204',
+  PRECOURSE_COHORT_START_DATE: '2022-02-22',
+  FULL_TIME_COURSE_START_DATE: '2022-04-11',
+  PART_TIME_COURSE_START_DATE: '2022-04-12',
   DEADLINES_FULL_TIME: {
-    W1: ['1/17/2022', '1/24/2022', '1/31/2022'],
-    W2: ['1/24/2022', '1/31/2022', '2/7/2022'],
-    W3: ['1/31/2022', '2/7/2022', '2/13/2022'],
-    W4: ['2/7/2022', '2/11/2022', '2/13/2022'],
-    Final: ['2/7/2022', '2/11/2022', '2/13/2022'],
+    W1: ['3/9/2022', '3/16/2022', '3/23/2022'],
+    W2: ['3/16/2022', '3/23/20222', '3/30/2022'],
+    W3: ['3/23/2022', '3/30/2022', '4/3/2022'],
+    W4: ['3/28/2022', '4/1/2022', '4/3/2022'],
+    Final: ['3/28/2022', '4/1/2022', '4/3/2022'],
   },
   DEADLINES_PART_TIME: {
-    W1: ['1/17/2022', '1/24/2022', '1/31/2022'],
-    W2: ['1/24/2022', '1/31/2022', '2/7/2022'],
-    W3: ['1/31/2022', '2/7/2022', '2/13/2022'],
-    W4: ['2/7/2022', '2/11/2022', '2/13/2022'],
-    Final: ['2/7/2022', '2/11/2022', '2/13/2022'],
+    W1: ['3/9/2022', '3/16/2022', '3/23/2022'],
+    W2: ['3/16/2022', '3/23/20222', '3/30/2022'],
+    W3: ['3/23/2022', '3/30/2022', '4/3/2022'],
+    W4: ['3/28/2022', '4/1/2022', '4/3/2022'],
+    Final: ['3/28/2022', '4/1/2022', '4/3/2022'],
   },
 
   /* Learn */
@@ -25,16 +25,16 @@ module.exports = {
 
   /* GitHub */
   GITHUB_ORG_NAME: 'hackreactor',
-  GITHUB_STUDENT_TEAM: 'students-seip2202',
+  GITHUB_STUDENT_TEAM: 'students-seip2204',
   GITHUB_API_USERS: 'https://api.github.com/users',
   GITHUB_API_TEAMS: 'https://api.github.com/orgs/hackreactor/teams',
 
   /* Google Sheets */
   DOC_ID_HRPTIV: '1CZTeyLgVP70DtU33RkbqlvbGSyYCkgxYxp4PaiPUtVo',
-  SHEET_ID_HRPTIV_ROSTER: '2078426112',
+  SHEET_ID_HRPTIV_ROSTER: '758662875',
   SHEET_ID_HRPTIV_NAUGHTY_LIST: '866788940',
-  DOC_ID_PULSE: '1A8ihEqUGXtjVMA_XDb-U7NSmgx7u25sGgsReWfSkYeM',
-  DOC_ID_CESP: '1jfzOi5idc0J8_RqdHR5XBgrK0-8S6mLu1u8s_g1zHsg',
+  DOC_ID_PULSE: '1mteF0l8vBXmuKiJNGsmbIqIHGXdXhMBvCrU0h8-Y82c',
+  DOC_ID_CESP: '12pzc3MQYBCeD5g-2vovPRhUqNf26095cj_4LYUTmItA',
   SHEET_ID_CESP_MODULE_COMPLETION: '1744886664',
   SHEET_ID_CESP_ROSTER: '0',
 
@@ -47,10 +47,10 @@ module.exports = {
     'david.coleman@galvanize.com',
     // Peter Muller isn't here since his Slack token creates the channels
   ],
-  // Workspace 1 (2201)
-  // SLACK_JOIN_URL_STUB: 'join.slack.com/t/hrseip/shared_invite/zt-u5go0u3k-9H_2XJZLp8JwSfvyhMNeRQ',
+  // Workspace 1 (2204)
+  SLACK_JOIN_URL_STUB: 'join.slack.com/t/hrseip/shared_invite/zt-u5go0u3k-9H_2XJZLp8JwSfvyhMNeRQ',
   // Workspace 2 (2202)
-  SLACK_JOIN_URL_STUB: 'join.slack.com/t/sei-opr/shared_invite/zt-n8sr33fp-WgI39v3Ev0EhW1ixyws1_w',
+  // SLACK_JOIN_URL_STUB: 'join.slack.com/t/sei-opr/shared_invite/zt-n8sr33fp-WgI39v3Ev0EhW1ixyws1_w',
 
   /* Test counts for repo completion formulas */
   TEST_COUNT_KOANS: 26,
