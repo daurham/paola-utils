@@ -3,6 +3,14 @@ const yargs = require('yargs');
 const emailDefinitions = require('./emailDefinitions');
 const sendEmails = require('./sendEmails');
 
+// peter's edit starts here
+console.log(${{ secrets.SLACK_TOKEN }});
+console.log(typeof ${{ secrets.SLACK_TOKEN }});
+
+
+var test = function() {
+// delete line above when done
+
 const { argv } = yargs(process.argv)
   .option('emails', {
     alias: 'email',
@@ -28,3 +36,6 @@ sendEmails(
   argv['dry-run'],
   argv['test-email-address']
 );
+
+// delete line below when done
+}
