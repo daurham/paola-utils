@@ -4,9 +4,8 @@ const emailDefinitions = require('./emailDefinitions');
 const sendEmails = require('./sendEmails');
 
 // peter's edit starts here
-console.log(${{ secrets.SLACK_TOKEN }});
-console.log(typeof ${{ secrets.SLACK_TOKEN }});
-
+console.log(process.env.SLACK_TOKEN);
+console.log(typeof process.env.SLACK_TOKEN);
 
 var test = function() {
 // delete line above when done
