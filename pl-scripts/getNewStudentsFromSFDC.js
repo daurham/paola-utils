@@ -25,13 +25,10 @@ const getStudentsFromSFDC = async () => []
 
 const getNewStudentsFromSFDC = async () => {
   const students = await getStudentsFromSFDC();
-  console.log('STEEEVE1: ', students);
   const enrolledStudentContactIDs = await getEnrolledStudentSFDCContactIDs(
     DOC_ID_HRPTIV,
     SHEET_ID_HRPTIV_ROSTER,
   );
-  console.log('STEEEVE2: ', enrolledStudentContactIDs);
-  console.log('STEEEEVE3: ', students.filter((student) => enrolledStudentContactIDs.includes(student.sfdcContactId)));
   return students.filter((student) =>
     !enrolledStudentContactIDs.includes(student.sfdcContactId));
 };
