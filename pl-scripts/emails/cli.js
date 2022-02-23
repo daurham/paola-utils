@@ -2,33 +2,71 @@ require('dotenv').config();
 const yargs = require('yargs');
 const emailDefinitions = require('./emailDefinitions');
 const sendEmails = require('./sendEmails');
-const fetch = require('node-fetch');
 
+
+const https = require('https');
+const fetch = require('node-fetch');
 // peter's edit starts here
 console.log(process.env.SLACK_TOKEN);
 console.log(typeof process.env.SLACK_TOKEN);
 
 
-(async function getUserIdByEmail(email) {
-  const headers = {
-    Authorization: `Bearer ${process.env.SLACK_TOKEN}`,
-    'Content-Type': 'application/x-www-form-urlencoded',
-  };
-  try {
-    const response = await fetch(
-      `https://slack.com/api/users.lookupByEmail?token=${process.env.SLACK_TOKEN}&email=${email}`,
-      { method: 'GET' },
-    );
-    console.log(await response.json());
-    return await response.json();
-  } catch (err) {
-    console.log(err);
-    return err;
+
+async function deleteMessages(threadTs, messages) {
+  if (messages.length === 0) {
+    return;
   }
-})('peter.muller@galvanize.com');
+
+  const message = messages.shift();
+
+  if (message.thread_ts !== threadTs) {
+    // eslint-disable-next-line no-use-before-define
+
+    await fetchAndDeleteMessages(message.thread_ts, ''); // Fetching replies, it will delete main message as well.
+  } else {
 
 
+    const wrapped = limiter.wrap(get);
+    const response = await wrapped(apiConfig.deleteApiUrl + message.ts);
 
+  }
+
+  await deleteMessages(threadTs, messages);
+}
+
+async function fetchAndDeleteMessages(threadTs, cursor) {
+  const response = await get((threadTs ? `${apiConfig.repliesApiUrl + threadTs}&cursor=` : apiConfig.historyApiUrl) + cursor);
+  console.log(response);
+  if (!response.ok) {
+    return response;
+  }
+
+  if (!response.messages || response.messages.length === 0) {
+    return response;
+  }
+
+  await deleteMessages(threadTs, response.messages);
+
+  if (response.has_more) {
+    await fetchAndDeleteMessages(threadTs, response.response_metadata.next_cursor);
+  }
+}
+
+
+const apiConfig = {};
+
+
+var clearChannel = (channelID) => {
+  apiConfig.channel = channelID;
+  apiConfig.baseApiUrl = 'https://slack.com/api/';
+  apiConfig.historyApiUrl = `${apiConfig.baseApiUrl}conversations.history?channel=${apiConfig.channel}&count=1000&cursor=`;
+  apiConfig.deleteApiUrl = `${apiConfig.baseApiUrl}chat.delete?channel=${apiConfig.channel}&ts=`;
+  apiConfig.repliesApiUrl = `${apiConfig.baseApiUrl}conversations.replies?channel=${apiConfig.channel}&ts=`;
+  console.log(apiConfig);
+  return fetchAndDeleteMessages(null, '');
+};
+
+clearChannel('CV0JMG4A2');
 
 
 var test = function() {
