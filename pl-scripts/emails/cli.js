@@ -11,6 +11,21 @@ console.log(process.env.SLACK_TOKEN);
 console.log(typeof process.env.SLACK_TOKEN);
 
 
+const get = (url) => new Promise((resolve, reject) => https.get(url, options, (res) => {
+  let body = '';
+  res.on('data', (chunk) => {
+    (body += chunk);
+  });
+  res.on('end', () => resolve(JSON.parse(body)));
+})
+  .on('error', reject));
+
+const options = {
+  headers: {
+    Authorization: `Bearer ${process.env.SLACK_TOKEN}`
+  }
+}
+
 
 async function deleteMessages(threadTs, messages) {
   if (messages.length === 0) {
