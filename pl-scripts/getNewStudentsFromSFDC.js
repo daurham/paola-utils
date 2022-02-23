@@ -31,9 +31,7 @@ const getNewStudentsFromSFDC = async () => {
     SHEET_ID_HRPTIV_ROSTER,
   );
   console.log('STEEEVE2: ', enrolledStudentContactIDs);
-  console.log('STEEEEVE3: ', students.filter((student) =>
-    !enrolledStudentContactIDs.includes(student.sfdcContactId));
-  });
+  console.log('STEEEEVE3: ', students.filter((student) => !enrolledStudentContactIDs.includes(student.sfdcContactId)));
   return students.filter((student) =>
     !enrolledStudentContactIDs.includes(student.sfdcContactId));
 };
