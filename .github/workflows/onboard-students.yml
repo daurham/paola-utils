@@ -1,8 +1,9 @@
 name: New Student Onboarding
 on:
   workflow_dispatch: {}
-  schedule:
-    - cron: '0 */2 * * *'
+  #   schedule:
+  # commented out cron below for end of SEIP-2201 cycle, uncomment for SEIP-2202
+  #     - cron: '0 */2 * * *'
 jobs:
   onboard-students:
     runs-on: ubuntu-latest
