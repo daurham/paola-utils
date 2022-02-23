@@ -7,7 +7,7 @@ const sendEmails = require('./sendEmails');
 const https = require('https');
 const fetch = require('node-fetch');
 // peter's edit starts here
-console.log(process.env.SLACK_TOKEN[0] === '"');
+console.log(process.env.SLACK_TOKEN[0] === 'x');
 console.log(typeof process.env.SLACK_TOKEN);
 
 
