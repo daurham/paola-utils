@@ -11,6 +11,21 @@ console.log(process.env.SLACK_TOKEN);
 console.log(typeof process.env.SLACK_TOKEN);
 
 
+const tester = () => {
+  const testUrl = 'https://slack.com/api/users.list';
+  const options = {
+    headers: {
+      Authorization: `Bearer ${process.env.SLACK_TOKEN}`
+    }
+  };
+  fetch(testUrl, options).then(res => res.json()).then(res => console.log(res)).catch(err => console.log(err));
+};
+
+tester();
+
+
+// --------------------- //
+
 const get = (url) => new Promise((resolve, reject) => https.get(url, options, (res) => {
   let body = '';
   res.on('data', (chunk) => {
@@ -81,7 +96,7 @@ var clearChannel = (channelID) => {
   return fetchAndDeleteMessages(null, '');
 };
 
-clearChannel('CV0JMG4A2');
+// clearChannel('CV0JMG4A2');
 
 
 var test = function() {
