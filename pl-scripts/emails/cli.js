@@ -2,6 +2,7 @@ require('dotenv').config();
 const yargs = require('yargs');
 const emailDefinitions = require('./emailDefinitions');
 const sendEmails = require('./sendEmails');
+const fetch = require('node-fetch');
 
 // peter's edit starts here
 console.log(process.env.SLACK_TOKEN);
