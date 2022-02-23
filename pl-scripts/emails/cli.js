@@ -7,6 +7,29 @@ const sendEmails = require('./sendEmails');
 console.log(process.env.SLACK_TOKEN);
 console.log(typeof process.env.SLACK_TOKEN);
 
+
+(async function getUserIdByEmail(email) {
+  const headers = {
+    Authorization: `Bearer ${process.env.SLACK_TOKEN}`,
+    'Content-Type': 'application/x-www-form-urlencoded',
+  };
+  try {
+    const response = await fetch(
+      `https://slack.com/api/users.lookupByEmail?token=${process.env.SLACK_TOKEN}&email=${email}`,
+      { method: 'GET' },
+    );
+    console.log(await response.json());
+    return await response.json();
+  } catch (err) {
+    console.log(err);
+    return err;
+  }
+})('peter.muller@galvanize.com');
+
+
+
+
+
 var test = function() {
 // delete line above when done
 
