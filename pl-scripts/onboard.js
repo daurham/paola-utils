@@ -35,7 +35,7 @@ const {
 
 const MAX_STUDENTS_PER_RUN = 30;
 const PRODUCT_CODE_CAMPUS_OVERRIDES = {
-  RFT: 'RFT Pacific',
+  RFP: 'RFT Pacific',
   RFE: 'RFT Eastern',
   RPP: 'RPT Pacific',
   RFC: 'RFT Central',
