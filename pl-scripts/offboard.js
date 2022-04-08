@@ -39,7 +39,7 @@ async function getStudentsToSeparate() {
   const doc = await loadGoogleSpreadsheet(DOC_ID_PULSE);
   const sheet = doc.sheetsByTitle['Separation Tracker'];
   const rows = await sheet.getRows();
-  return rows.filter((student) => student.separationType !== 'TBD');
+  return rows; // .filter((student) => student.separationType !== 'TBD');
 }
 
 function updateStudentOffboardingProgress(students, col) {

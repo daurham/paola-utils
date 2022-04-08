@@ -4,6 +4,7 @@ const { LEARN_API_COHORTS } = require('../constants');
 const headers = {
   Authorization: `Bearer ${process.env.LEARN_TOKEN}`,
   'Content-Type': 'application/json',
+  Accept: 'application/json',
 };
 
 // ------------------------------
