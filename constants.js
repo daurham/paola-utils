@@ -1,22 +1,22 @@
 module.exports = {
   /* Cohort-specific config and dates */
-  COHORT_ID: 'seip2204',
-  PRECOURSE_COHORT_START_DATE: '2022-02-21',
-  FULL_TIME_COURSE_START_DATE: '2022-04-11',
-  PART_TIME_COURSE_START_DATE: '2022-04-12',
+  COHORT_ID: 'seip2205',
+  PRECOURSE_COHORT_START_DATE: '2022-04-11',
+  FULL_TIME_COURSE_START_DATE: '2022-05-31',
+  PART_TIME_COURSE_START_DATE: '2022-06-01',
   DEADLINES_FULL_TIME: {
-    W1: ['3/9/2022', '3/16/2022', '3/23/2022'],
-    W2: ['3/16/2022', '3/23/20222', '3/30/2022'],
-    W3: ['3/23/2022', '3/30/2022', '4/3/2022'],
-    W4: ['3/28/2022', '4/1/2022', '4/3/2022'],
-    Final: ['3/28/2022', '4/1/2022', '4/3/2022'],
+    W1: ['4/27/2022', '5/4/2022', '5/11/2022'],
+    W2: ['5/4/2022', '5/11/2022', '5/18/2022'],
+    W3: ['5/11/2022', '5/18/2022', '5/22/2022'],
+    W4: ['5/16/2022', '5/20/2022', '5/22/2022'],
+    Final: ['5/16/2022', '5/20/2022', '5/22/2022'],
   },
   DEADLINES_PART_TIME: {
-    W1: ['3/9/2022', '3/16/2022', '3/23/2022'],
-    W2: ['3/16/2022', '3/23/20222', '3/30/2022'],
-    W3: ['3/23/2022', '3/30/2022', '4/3/2022'],
-    W4: ['3/28/2022', '4/1/2022', '4/3/2022'],
-    Final: ['3/28/2022', '4/1/2022', '4/3/2022'],
+    W1: ['4/27/2022', '5/4/2022', '5/11/2022'],
+    W2: ['5/4/2022', '5/11/2022', '5/18/2022'],
+    W3: ['5/11/2022', '5/18/2022', '5/22/2022'],
+    W4: ['5/16/2022', '5/20/2022', '5/22/2022'],
+    Final: ['5/16/2022', '5/20/2022', '5/22/2022'],
   },
 
   /* Learn */
@@ -25,16 +25,16 @@ module.exports = {
 
   /* GitHub */
   GITHUB_ORG_NAME: 'hackreactor',
-  GITHUB_STUDENT_TEAM: 'students-seip2204',
+  GITHUB_STUDENT_TEAM: 'students-seip2205',
   GITHUB_API_USERS: 'https://api.github.com/users',
   GITHUB_API_TEAMS: 'https://api.github.com/orgs/hackreactor/teams',
 
   /* Google Sheets */
   DOC_ID_HRPTIV: '1CZTeyLgVP70DtU33RkbqlvbGSyYCkgxYxp4PaiPUtVo',
-  SHEET_ID_HRPTIV_ROSTER: '758662875',
+  SHEET_ID_HRPTIV_ROSTER: '1941757203',
   SHEET_ID_HRPTIV_NAUGHTY_LIST: '866788940',
-  DOC_ID_PULSE: '1mteF0l8vBXmuKiJNGsmbIqIHGXdXhMBvCrU0h8-Y82c',
-  DOC_ID_CESP: '12pzc3MQYBCeD5g-2vovPRhUqNf26095cj_4LYUTmItA',
+  DOC_ID_PULSE: '1JWV4ScBrRR3Bns3wTJRRWRMve0of0O0WVjsHNPDf3Ag',
+  DOC_ID_CESP: '1FH1drCGGltvLxc2AtsSXsGwgixGQkPZfGSZ73DLUG60',
   SHEET_ID_CESP_MODULE_COMPLETION: '1744886664',
   SHEET_ID_CESP_ROSTER: '0',
 
