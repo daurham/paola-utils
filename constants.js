@@ -1,5 +1,7 @@
 module.exports = {
-  /* Cohort-specific config and dates */
+  /**
+   * The following constants MUST be updated each round
+   */
   COHORT_ID: 'seip2205',
   PRECOURSE_COHORT_START_DATE: '2022-04-11',
   FULL_TIME_COURSE_START_DATE: '2022-05-31',
@@ -11,23 +13,44 @@ module.exports = {
     W4: ['5/16/2022', '5/20/2022', '5/22/2022'],
     Final: ['5/16/2022', '5/20/2022', '5/22/2022'],
   },
+  LEARN_COHORT_ID: '3244',
+  GITHUB_STUDENT_TEAM: 'students-seip2205',
+  DOC_ID_PULSE: '1JWV4ScBrRR3Bns3wTJRRWRMve0of0O0WVjsHNPDf3Ag',
+  DOC_ID_CESP: '1FH1drCGGltvLxc2AtsSXsGwgixGQkPZfGSZ73DLUG60',
+  SHEET_ID_HRPTIV_ROSTER: '1941757203', // gid for each round's roster worksheet
+  // Slack invite URL toggles between each of these each round, since there are
+  // two workspaces that we alternate between
+  // Workspace 1 (2204)
+  // SLACK_JOIN_URL_STUB: 'join.slack.com/t/hrseip/shared_invite/zt-u5go0u3k-9H_2XJZLp8JwSfvyhMNeRQ',
+  // Workspace 2 (2205)
+  SLACK_JOIN_URL_STUB: 'join.slack.com/t/sei-opr/shared_invite/zt-n8sr33fp-WgI39v3Ev0EhW1ixyws1_w',
+
+  // Update these as changes are made to the assignment test suites (for repo completion formulas)
+  TEST_COUNT_KOANS: 26,
+  TEST_COUNT_TESTBUILDER_MIN: 3323,
+  TEST_COUNT_TESTBUILDER_MAX: 3329,
+  TEST_COUNT_UNDERBAR_PART_ONE: 65,
+  TEST_COUNT_UNDERBAR_PART_TWO: 67,
+  TEST_COUNT_TWIDDLER: 48,
+  TEST_COUNT_RECURSION: 2,
+
+  /**
+   * The rest of the constants do NOT need to be updated each round
+   */
 
   /* Learn */
-  LEARN_COHORT_ID: '3244',
   LEARN_API_COHORTS: 'https://learn-2.galvanize.com/api/v1/cohorts/',
 
   /* GitHub */
   GITHUB_ORG_NAME: 'hackreactor',
-  GITHUB_STUDENT_TEAM: 'students-seip2205',
   GITHUB_API_USERS: 'https://api.github.com/users',
   GITHUB_API_TEAMS: 'https://api.github.com/orgs/hackreactor/teams',
 
   /* Google Sheets */
   DOC_ID_HRPTIV: '1CZTeyLgVP70DtU33RkbqlvbGSyYCkgxYxp4PaiPUtVo',
-  SHEET_ID_HRPTIV_ROSTER: '1941757203',
   SHEET_ID_HRPTIV_NAUGHTY_LIST: '866788940',
-  DOC_ID_PULSE: '1JWV4ScBrRR3Bns3wTJRRWRMve0of0O0WVjsHNPDf3Ag',
-  DOC_ID_CESP: '1FH1drCGGltvLxc2AtsSXsGwgixGQkPZfGSZ73DLUG60',
+  // the following gid only needs updated if CES&P is not _duplicated_
+  // (duplicating a sheet preserves the individual worksheet gids)
   SHEET_ID_CESP_MODULE_COMPLETION: '1744886664',
   SHEET_ID_CESP_ROSTER: '0',
 
@@ -40,19 +63,6 @@ module.exports = {
     'david.coleman@galvanize.com',
     // Peter Muller isn't here since his Slack token creates the channels
   ],
-  // Workspace 1 (2204)
-  SLACK_JOIN_URL_STUB: 'join.slack.com/t/hrseip/shared_invite/zt-u5go0u3k-9H_2XJZLp8JwSfvyhMNeRQ',
-  // Workspace 2 (2202)
-  // SLACK_JOIN_URL_STUB: 'join.slack.com/t/sei-opr/shared_invite/zt-n8sr33fp-WgI39v3Ev0EhW1ixyws1_w',
-
-  /* Test counts for repo completion formulas */
-  TEST_COUNT_KOANS: 26,
-  TEST_COUNT_TESTBUILDER_MIN: 3323,
-  TEST_COUNT_TESTBUILDER_MAX: 3329,
-  TEST_COUNT_UNDERBAR_PART_ONE: 65,
-  TEST_COUNT_UNDERBAR_PART_TWO: 67,
-  TEST_COUNT_TWIDDLER: 48,
-  TEST_COUNT_RECURSION: 2,
 
   /* Salesforce */
   SFDC_OPPTY_RECORD_ID: '012j0000000qVAP',
