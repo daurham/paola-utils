@@ -96,7 +96,6 @@ module.exports = {
     'Student__r.Tshirt_Size__c',
     'Student__r.T_Shirt_Fit__c',
     'Student__r.Highest_Degree__c',
-    'Student__r.gender__c',
     'Student__r.Race__c',
     'Student__r.EthnicityNew__c',
     'Student__r.Identify_as_LGBTQ__c',

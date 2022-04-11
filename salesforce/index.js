@@ -77,7 +77,7 @@ const formatStudents = (students) => {
       tshirtSize: contact.Tshirt_Size__c,
       tshirtFit: contact.T_Shirt_Fit__c,
       highestDegree: contact.Highest_Degree__c,
-      gender: contact.gender__c,
+      gender: '',
       race: contact.Race__c,
       ethnicity: contact.EthnicityNew__c,
       identifyAsLGBTQ: contact.Identify_as_LGBTQ__c,
