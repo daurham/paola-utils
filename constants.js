@@ -61,6 +61,7 @@ module.exports = {
     'eliza.drinker@galvanize.com',
     'steven.chung@galvanize.com',
     'david.coleman@galvanize.com',
+    'nate.schroeder@galvanize.com',
     // Peter Muller isn't here since his Slack token creates the channels
   ],
 
