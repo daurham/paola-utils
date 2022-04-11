@@ -33,7 +33,7 @@ const {
   TEST_COUNT_RECURSION,
 } = require('../constants');
 
-const MAX_STUDENTS_PER_RUN = 30;
+const MAX_STUDENTS_PER_RUN = 1;
 const PRODUCT_CODE_CAMPUS_OVERRIDES = {
   RFP: 'RFT Pacific',
   RFE: 'RFT Eastern',
