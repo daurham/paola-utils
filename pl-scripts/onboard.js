@@ -15,8 +15,7 @@ const { getNewStudentsFromSFDC, hasIntakeFormCompleted } = require('./getNewStud
 const {
   COHORT_ID,
   PRECOURSE_COHORT_START_DATE,
-  DEADLINES_FULL_TIME,
-  DEADLINES_PART_TIME,
+  DEADLINE_DATES,
   LEARN_COHORT_ID,
   GITHUB_STUDENT_TEAM,
   GITHUB_ORG_NAME,
@@ -255,8 +254,6 @@ const sendWelcomeEmails = async (students) => {
   const toList = [PROGRAM_EMAIL];
   const ccList = students.map((student) => student.email);
   const bccList = [];
-  const ccListFullTime = students.filter(isFullTime).map((student) => student.email);
-  const ccListPartTime = students.filter(isPartTime).map((student) => student.email);
 
   if (ccList.length > 0) {
     await sendEmailFromDraft(
@@ -269,40 +266,20 @@ const sendWelcomeEmails = async (students) => {
         cohortId: COHORT_ID,
       },
     );
-  }
 
-  if (ccListFullTime.length > 0) {
     await sendEmailFromDraft(
       deadlinesSubjectQuery,
       toList,
-      ccListFullTime,
+      ccList,
       bccList,
       alias,
       {
-        milestoneOne: DEADLINES_FULL_TIME[currentDeadlineGroup][0],
-        milestoneTwo: DEADLINES_FULL_TIME[currentDeadlineGroup][1],
-        milestoneThree: DEADLINES_FULL_TIME[currentDeadlineGroup][2],
-        deadlineOne: DEADLINES_FULL_TIME.Final[0],
-        deadlineTwo: DEADLINES_FULL_TIME.Final[1],
-        deadlineThree: DEADLINES_FULL_TIME.Final[2],
-      },
-    );
-  }
-
-  if (ccListPartTime.length > 0) {
-    await sendEmailFromDraft(
-      deadlinesSubjectQuery,
-      toList,
-      ccListPartTime,
-      bccList,
-      alias,
-      {
-        milestoneOne: DEADLINES_PART_TIME[currentDeadlineGroup][0],
-        milestoneTwo: DEADLINES_PART_TIME[currentDeadlineGroup][1],
-        milestoneThree: DEADLINES_PART_TIME[currentDeadlineGroup][2],
-        deadlineOne: DEADLINES_PART_TIME.Final[0],
-        deadlineTwo: DEADLINES_PART_TIME.Final[1],
-        deadlineThree: DEADLINES_PART_TIME.Final[2],
+        milestoneOne: DEADLINE_DATES[currentDeadlineGroup][0],
+        milestoneTwo: DEADLINE_DATES[currentDeadlineGroup][1],
+        milestoneThree: DEADLINE_DATES[currentDeadlineGroup][2],
+        deadlineOne: DEADLINE_DATES.Final[0],
+        deadlineTwo: DEADLINE_DATES.Final[1],
+        deadlineThree: DEADLINE_DATES.Final[2],
       },
     );
   }

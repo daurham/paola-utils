@@ -1,7 +1,4 @@
-const {
-  DEADLINES_FULL_TIME,
-  DEADLINES_PART_TIME,
-} = require('../../constants');
+const { DEADLINE_DATES } = require('../../constants');
 const { getRepoCompletionStudents, getRosterStudents } = require('./getStudents');
 
 const NO_FORK_TEXT = 'No Fork';
@@ -10,11 +7,10 @@ const TIMED_OUT_TEXT = 'Timed Out';
 const MESSAGE_NO_FORKS = 'According to our records, you haven\'t forked any of the assignment repositories.';
 
 const getDeadline = (student, moduleNumber, final) => {
-  const { deadlineGroup, campus } = student;
-  let key = final ? 'Final' : deadlineGroup;
-  if (!(key in DEADLINES_FULL_TIME)) key = 'W4'; // give up :(
-  const deadlines = campus.includes('RPT') ? DEADLINES_PART_TIME[key] : DEADLINES_FULL_TIME[key];
-  return deadlines[moduleNumber - 1];
+  const { deadlineGroup } = student;
+  let deadlinesKey = final ? 'Final' : deadlineGroup;
+  if (!(deadlinesKey in DEADLINE_DATES)) deadlinesKey = 'W4'; // give up :(
+  return DEADLINE_DATES[deadlinesKey][moduleNumber - 1];
 };
 
 async function getMissedDeadlineStudents(moduleNumber) {
