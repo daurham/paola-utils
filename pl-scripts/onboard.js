@@ -23,6 +23,7 @@ const {
   DOC_ID_PULSE,
   SHEET_ID_HRPTIV_ROSTER,
   SHEET_ID_HRPTIV_NAUGHTY_LIST,
+  SLACK_JOIN_URL_STUB,
   TEST_COUNT_KOANS,
   TEST_COUNT_TESTBUILDER_MIN,
   TEST_COUNT_TESTBUILDER_MAX,
@@ -264,6 +265,8 @@ const sendWelcomeEmails = async (students) => {
       alias,
       {
         cohortId: COHORT_ID,
+        slackJoinURL: SLACK_JOIN_URL_STUB,
+        learnCohortId: LEARN_COHORT_ID,
       },
     );
 
