@@ -13,7 +13,7 @@ module.exports = {
     W4: ['5/16/2022', '5/20/2022', '5/22/2022'],
     Final: ['5/16/2022', '5/20/2022', '5/22/2022'],
   },
-  LEARN_COHORT_ID: '3244',
+  LEARN_COHORT_ID: '3313',
   GITHUB_STUDENT_TEAM: 'students-seip2205',
   DOC_ID_PULSE: '1JWV4ScBrRR3Bns3wTJRRWRMve0of0O0WVjsHNPDf3Ag',
   DOC_ID_CESP: '1FH1drCGGltvLxc2AtsSXsGwgixGQkPZfGSZ73DLUG60',
