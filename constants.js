@@ -23,7 +23,7 @@ module.exports = {
   // Workspace 1 (2204)
   // SLACK_JOIN_URL_STUB: 'join.slack.com/t/hrseip/shared_invite/zt-u5go0u3k-9H_2XJZLp8JwSfvyhMNeRQ',
   // Workspace 2 (2205)
-  SLACK_JOIN_URL_STUB: 'join.slack.com/t/sei-opr/shared_invite/zt-n8sr33fp-WgI39v3Ev0EhW1ixyws1_w',
+  SLACK_JOIN_URL_STUB: 'join.slack.com/t/sei-opr/shared_invite/zt-1713wh5hc-vYsb9ut7gKri6CcGGJS~nQ',
 
   // Update these as changes are made to the assignment test suites (for repo completion formulas)
   TEST_COUNT_KOANS: 26,
