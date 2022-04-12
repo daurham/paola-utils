@@ -78,11 +78,22 @@ const setChannelTopic = async (channelID, topic) => rateLimitedAPIRequest(
 //   'GET',
 // );
 
+const getAllSlackUsers = async () => {
+  let cursor = '';
+  const slackUsers = [];
+  do {
+    const response = await slackAPIRequest(`users.list?cursor=${cursor}`, 'GET'); // eslint-disable-line no-await-in-loop
+    slackUsers.push(...response.members);
+    cursor = response.response_metadata.next_cursor;
+  } while (cursor);
+  return slackUsers;
+};
+
 let cachedTechMentorUserIDs;
 const getTechMentorUserIDs = async () => {
   if (!cachedTechMentorUserIDs) {
-    const users = await rateLimitedAPIRequest('users.list', 'GET');
-    cachedTechMentorUserIDs = users.members
+    const users = await getAllSlackUsers();
+    cachedTechMentorUserIDs = users
       .filter((user) => SLACK_TM_EMAILS.includes(user.profile.email))
       .map((user) => user.id);
   }
@@ -119,17 +130,6 @@ const createChannelPerStudent = async (nameList) => {
 //   `conversations.history?channel=${channelID}&limit=1000`,
 //   'GET',
 // );
-
-const getAllSlackUsers = async () => {
-  let cursor = '';
-  const slackUsers = [];
-  do {
-    const response = await slackAPIRequest(`users.list?cursor=${cursor}`, 'GET'); // eslint-disable-line no-await-in-loop
-    slackUsers.push(...response.members);
-    cursor = response.response_metadata.next_cursor;
-  } while (cursor);
-  return slackUsers;
-};
 
 module.exports = {
   slackAPIRequest: rateLimitedAPIRequest,
