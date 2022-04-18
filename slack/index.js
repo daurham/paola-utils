@@ -36,7 +36,7 @@ const sendMessageToChannel = (channel, text) => rateLimitedAPIRequest(
 // which is the desired channel name for each student's private chat channel
 const NAME_SUFFIXES = ['II', 'III', 'IV', 'JR', 'SR', 'JR.', 'SR.'];
 const formatListOfNames = (nameList) => nameList.map((name) => {
-  const nameArray = name.split(' ');
+  const nameArray = name.replace('\'', '').split(' ');
   if (nameArray.length > 2) {
     const lastNamePart = nameArray[nameArray.length - 1].toUpperCase();
     if (NAME_SUFFIXES.includes(lastNamePart)) nameArray.pop();
