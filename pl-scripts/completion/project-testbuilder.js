@@ -65,7 +65,7 @@ module.exports = {
           0,
         );
       }
-      const definedTests = countTests(mocha.suite.suites);
+      const definedTests = countTests(mocha.suite.suites) + mocha.suite.tests.length;
       const executedTests =
         Number(document.querySelector('.passes em').innerText) +
         Number(document.querySelector('.failures em').innerText);
