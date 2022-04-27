@@ -133,6 +133,8 @@ async function fetchAndTestProject({
   verbose,
   lastCommitHash,
   localPathToStudentRepos,
+  githubAuthUser,
+  githubAuthToken,
 }) {
   const logPrefix = `[${githubHandle} - ${project.repoName}]:`;
   const qualifiedRepoName = `${cohortId}-${project.repoName}`;
@@ -146,6 +148,8 @@ async function fetchAndTestProject({
     localRepoPath,
     githubPath,
     lastCommitHash,
+    githubAuthUser,
+    githubAuthToken,
   );
   console.info(getTime(), logPrefix, GIT_RESPONSE_LOG_STRINGS[gitResult.code]);
 
@@ -180,6 +184,8 @@ async function updateRepoCompletionWorksheet({
   batchSize,
   cohortId,
   localPathToStudentRepos,
+  githubAuthUser,
+  githubAuthToken,
   verbose,
 }) {
   const sheet = await loadGoogleSpreadsheet(sheetId);
@@ -221,6 +227,8 @@ async function updateRepoCompletionWorksheet({
             verbose,
             lastCommitHash: student.metadata[`${project.repoName}LastCommit`],
             localPathToStudentRepos,
+            githubAuthUser,
+            githubAuthToken,
           });
           Object.assign(studentResults, results.repoCompletionChanges);
           student.metadata[`${project.repoName}LastCommit`] = results.gitCommitHash; // eslint-disable-line no-param-reassign
@@ -258,6 +266,8 @@ async function updateRepoCompletionWorksheets({
   batchSize,
   cohortId,
   localPathToStudentRepos,
+  githubAuthUser,
+  githubAuthToken,
   verbose,
 }) {
   // eslint-disable-next-line no-restricted-syntax
@@ -271,6 +281,8 @@ async function updateRepoCompletionWorksheets({
         batchSize,
         cohortId,
         localPathToStudentRepos,
+        githubAuthUser,
+        githubAuthToken,
         verbose,
       });
       if (!result) {

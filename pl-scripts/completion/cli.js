@@ -60,6 +60,8 @@ if (argv.student) {
           project,
           cohortId: COHORT_ID,
           localPathToStudentRepos: PATH_TO_STUDENT_REPOS,
+          githubAuthUser: process.env.GITHUB_AUTH_USER,
+          githubAuthToken: process.env.GITHUB_AUTH_TOKEN,
           verbose: argv.verbose,
         });
         console.log(`[${argv.student} - ${project.repoName}]:`, results);
@@ -78,7 +80,9 @@ if (argv.student) {
     projects: argv.projects.map((name) => projectDefinitions[name]),
     batchSize: argv['batch-size'],
     cohortId: COHORT_ID,
-    verbose: argv.verbose,
     localPathToStudentRepos: PATH_TO_STUDENT_REPOS,
+    githubAuthUser: process.env.GITHUB_AUTH_USER,
+    githubAuthToken: process.env.GITHUB_AUTH_TOKEN,
+    verbose: argv.verbose,
   });
 }
