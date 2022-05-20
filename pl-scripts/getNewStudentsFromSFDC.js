@@ -34,7 +34,7 @@ const getNewStudentsFromSFDC = async () => {
 };
 
 const hasIntakeFormCompleted = (student) => student.funFact
-  && student.selfReportedPrepartion && student.githubHandle && student.pronouns;
+  && student.selfReportedPrepartion && student.githubHandle;
 
 module.exports = {
   getStudentsFromSFDC,
