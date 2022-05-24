@@ -28,6 +28,7 @@ const CESP_ROSTER_SHEET_HEADERS = [
   'Tech Mentor',
   'Precourse Complete',
   'Status',
+  'RFP Pod',
 ];
 const CESP_MODULE_COMPLETION_SHEET_HEADERS = [
   'Full Name',
@@ -63,6 +64,7 @@ const formatStudentsForCESPRosterSheet = (students, separations) => students.map
   'Tech Mentor': student.techMentor,
   'Precourse Complete': student.allComplete,
   'Status': (separations.find((separatedStudent) => separatedStudent.fullName === student.fullName) || { separationType: 'Enrolled' }).separationType,
+  'RFP Pod': student['RFP Pod'],
 }));
 const formatStudentsForCESPModuleCompletionSheet = (students) => students.map((student) => ({
   'Full Name': student.fullName,
@@ -99,6 +101,84 @@ const filterAndSortStudents = (students) => students
     (separatedStudent) => separatedStudent.fullName === student.fullName,
   ));
 
+  const allStudents = await getRows(pulseSheet.sheetsByTitle['HRPTIV']);
+
+  const pacificStudents = activeStudents.filter(s => s.campus === 'RFT Pacific')
+    .map((s) => {
+      const scores = [
+        s.m1DiagnosticTask1,
+        s.m1DiagnosticTask2,
+        s.m2DiagnosticTask1,
+        s.m2DiagnosticTask2,
+        s.m3DiagnosticTask1,
+        s.m3DiagnosticTask2,
+      ].filter((score) => score !== '-' && score !== undefined);
+      const hasDiagnostics = scores.length > 0;
+      const diagnosticAverage = scores.length > 0
+        ? scores.reduce((acc, cur) => acc + Number(cur), 0) / scores.length
+        : 0;
+
+      const rosterMatch = allStudents.find((rosterEntry) => rosterEntry.fullName.toLowerCase()
+        === s.fullName.toLowerCase());
+      const isCalifornia = !!(rosterMatch && (
+        rosterMatch.addressWhileInSchool.match(/california/i)
+        || rosterMatch.addressWhileInSchool.match(/\bCA\b/)
+      ));
+
+      return {
+        ...s,
+        isCalifornia,
+        hasDiagnostics,
+        diagnosticAverage,
+      };
+    });
+
+  const getPodAverage = (pod) => {
+    const a = pod.filter((s) => s.hasDiagnostics && s.diagnosticAverage);
+    return a.reduce((acc, cur) => acc + cur.diagnosticAverage, 0) / a.length;
+  };
+
+  let bestNonCali;
+  let bestCali;
+  let bestDiff = 100;
+  const NUM_ITERATIONS = 100000;
+  for (let i = 0; i < NUM_ITERATIONS; i++) {
+    const nonCaliPod = pacificStudents.filter((s) => !s.isCalifornia);
+    const caliPod = pacificStudents.filter((s) => s.isCalifornia);
+    while (caliPod.length >= nonCaliPod.length + 1) {
+      const ix = Math.floor(Math.random() * caliPod.length);
+      const s = caliPod.splice(ix, 1)[0];
+      nonCaliPod.push(s);
+    }
+    const diff = Math.abs(getPodAverage(caliPod) - getPodAverage(nonCaliPod));
+    if (diff < bestDiff) {
+      bestDiff = diff;
+      bestNonCali = nonCaliPod;
+      bestCali = caliPod;
+    }
+  }
+
+  console.log('Created 2 pods with an average diagnostic score difference of', bestDiff);
+  console.log('pod 1', bestCali.length);
+  console.log('pod 2', bestNonCali.length);
+
+  console.log(bestNonCali);
+
+  for (let s of students) {
+    if (bestCali.find((ts) => ts.githubHandle.toLowerCase() === s.githubHandle.toLowerCase())) {
+      console.log('cali match', s.fullName);
+      s['RFP Pod'] = 'Only CA';
+    } else if (bestNonCali.find((ts) => ts.githubHandle.toLowerCase() === s.githubHandle.toLowerCase())) {
+      console.log('non-cali match', s.fullName);
+      s['RFP Pod'] = 'Includes Outside CA';
+    } else {
+      if (s.campus.includes('RFT Pacific')) {
+        console.log('no match', s.fullName, `"${s.githubHandle}"`);
+      }
+      s['RFP Pod'] = '';
+    }
+  }
+
   const roster = formatStudentsForCESPRosterSheet(students, separations);
   const moduleCompletion = formatStudentsForCESPModuleCompletionSheet(activeStudents);
 
@@ -110,12 +190,12 @@ const filterAndSortStudents = (students) => students
   console.info('Updating roster worksheet...');
   await replaceWorksheet(doc.sheetsById[SHEET_ID_CESP_ROSTER], CESP_ROSTER_SHEET_HEADERS, roster);
 
-  console.info('Updating module completion worksheet...');
-  await replaceWorksheet(
-    doc.sheetsById[SHEET_ID_CESP_MODULE_COMPLETION],
-    CESP_MODULE_COMPLETION_SHEET_HEADERS,
-    moduleCompletion,
-  );
+  // console.info('Updating module completion worksheet...');
+  // await replaceWorksheet(
+  //   doc.sheetsById[SHEET_ID_CESP_MODULE_COMPLETION],
+  //   CESP_MODULE_COMPLETION_SHEET_HEADERS,
+  //   moduleCompletion,
+  // );
 
   console.info('Done!');
 })();

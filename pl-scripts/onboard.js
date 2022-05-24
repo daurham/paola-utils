@@ -11,6 +11,7 @@ const { addStudentToCohort } = require('../learn');
 const { createChannelPerStudent, sendMessageToChannel } = require('../slack');
 const techMentors = require('../tech-mentors');
 const { getNewStudentsFromSFDC, hasIntakeFormCompleted } = require('./getNewStudentsFromSFDC');
+const { exitIfCohortIsNotActive, currentCohortWeek } = require('./runOnlyDuringActiveCohort');
 
 const {
   COHORT_ID,
@@ -32,6 +33,8 @@ const {
   TEST_COUNT_TWIDDLER,
   TEST_COUNT_RECURSION,
 } = require('../constants');
+
+exitIfCohortIsNotActive();
 
 const MAX_STUDENTS_PER_RUN = 30;
 const PRODUCT_CODE_CAMPUS_OVERRIDES = {
@@ -98,23 +101,6 @@ const NAUGHTY_LIST_HEADERS = [
   'ageAtStart',
   'studentOnboardingFormCompletedOn',
 ];
-
-// Week calculation for deadlines & groups
-const WEEK_DURATION_MS = 1000 * 60 * 60 * 24 * 7;
-const currentDate = new Date();
-function getCurrentCohortWeek() {
-  return Math.ceil((currentDate - new Date(PRECOURSE_COHORT_START_DATE)) / WEEK_DURATION_MS);
-}
-const currentCohortWeek = getCurrentCohortWeek();
-if (
-  currentCohortWeek < 1 || // no onboarding in W0
-  currentCohortWeek > 4 || // or after W4
-  // or after 5PM PT on Friday of W4 (5PM PT = midnight/1AM UTC next day)
-  (currentCohortWeek === 4 && currentDate.getUTCDay() > 5 && currentDate.getUTCHours() > 0)
-) {
-  console.error(`Cohort week out of range (${currentCohortWeek}), exiting`);
-  process.exit(0);
-}
 
 const googleGroupFullTime = `seipw${currentCohortWeek}@galvanize.com`;
 const googleGroupPartTime = currentCohortWeek <= 2
