@@ -2,28 +2,28 @@ module.exports = {
   /**
    * The following constants MUST be updated each round
    */
-  COHORT_ID: 'seip2205',
-  PRECOURSE_COHORT_START_DATE: '2022-04-11',
-  FULL_TIME_COURSE_START_DATE: '2022-05-31',
-  PART_TIME_COURSE_START_DATE: '2022-06-01',
+  COHORT_ID: 'seip2207',
+  PRECOURSE_COHORT_START_DATE: '2022-05-31',
+  FULL_TIME_COURSE_START_DATE: '2022-07-18',
+  PART_TIME_COURSE_START_DATE: '2022-07-19',
   DEADLINE_DATES: {
-    W1: ['4/27/2022', '5/4/2022', '5/11/2022'],
-    W2: ['5/4/2022', '5/11/2022', '5/18/2022'],
-    W3: ['5/11/2022', '5/18/2022', '5/22/2022'],
-    W4: ['5/16/2022', '5/20/2022', '5/22/2022'],
-    Final: ['5/16/2022', '5/20/2022', '5/22/2022'],
+    W1: ['6/15/2022', '6/22/2022', '6/29/2022'],
+    W2: ['6/22/2022', '6/29/2022', '7/6/2022'],
+    W3: ['6/29/2022', '7/6/2022', '7/10/2022'],
+    W4: ['7/1/2022', '7/8/2022', '7/10/2022'],
+    Final: ['7/1/2022', '7/8/2022', '7/10/2022'],
   },
-  LEARN_COHORT_ID: '3313',
-  GITHUB_STUDENT_TEAM: 'students-seip2205',
-  DOC_ID_PULSE: '1JWV4ScBrRR3Bns3wTJRRWRMve0of0O0WVjsHNPDf3Ag',
-  DOC_ID_CESP: '1FH1drCGGltvLxc2AtsSXsGwgixGQkPZfGSZ73DLUG60',
-  SHEET_ID_HRPTIV_ROSTER: '1941757203', // gid for each round's roster worksheet
+  LEARN_COHORT_ID: '3340',
+  GITHUB_STUDENT_TEAM: 'students-seip2207',
+  DOC_ID_PULSE: '1Qc5xTEri5yp1borurZ42MKpd9DqYivI_CYCnUVc4PMM',
+  DOC_ID_CESP: '1E3iGYANlHd_QMoeIoUZGTs5dgd8uknNTpl2_mPRhuYU',
+  SHEET_ID_HRPTIV_ROSTER: '115211641', // gid for each round's roster worksheet
   // Slack invite URL toggles between each of these each round, since there are
   // two workspaces that we alternate between
-  // Workspace 1 (2204)
-  // SLACK_JOIN_URL_STUB: 'join.slack.com/t/hrseip/shared_invite/zt-u5go0u3k-9H_2XJZLp8JwSfvyhMNeRQ',
+  // Workspace 1 (2207)
+  SLACK_JOIN_URL_STUB: 'join.slack.com/t/hrseip/shared_invite/zt-u5go0u3k-9H_2XJZLp8JwSfvyhMNeRQ',
   // Workspace 2 (2205)
-  SLACK_JOIN_URL_STUB: 'join.slack.com/t/sei-opr/shared_invite/zt-1713wh5hc-vYsb9ut7gKri6CcGGJS~nQ',
+  // SLACK_JOIN_URL_STUB: 'join.slack.com/t/sei-opr/shared_invite/zt-1713wh5hc-vYsb9ut7gKri6CcGGJS~nQ',
 
   // Update these as changes are made to the assignment test suites (for repo completion formulas)
   TEST_COUNT_KOANS: 26,
