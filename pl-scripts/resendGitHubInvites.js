@@ -38,6 +38,8 @@ const getGitHubTeamMembers = async () => {
   const studentsMissingOnTeam = githubHandles.filter((githubHandle) => !githubTeamMembers.includes(githubHandle) && !pendingTeamMembers.includes(githubHandle));
   console.info('Found', studentsMissingOnTeam.length, 'students on the roster who are not in the team and do not have pending invites');
 
+  console.log(studentsMissingOnTeam);
+
   console.info('Sending fresh invitations...');
   await addUsersToTeam(studentsMissingOnTeam, GITHUB_STUDENT_TEAM);
   console.info('Done!');
