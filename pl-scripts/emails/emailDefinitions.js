@@ -1,5 +1,5 @@
-const { getNewStudentsFromSFDC, hasIntakeFormCompleted } = require('../getNewStudentsFromSFDC');
 const { getAllSlackUsers } = require('../../slack');
+const { getNewStudentsFromSFDC, hasIntakeFormCompleted } = require('../../salesforce');
 const {
   LEARN_COHORT_ID,
   SLACK_JOIN_URL_STUB,

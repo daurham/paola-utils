@@ -10,7 +10,7 @@ const { addUsersToTeam, createBranches } = require('../github');
 const { addStudentToCohort } = require('../learn');
 const { createChannelPerStudent, sendMessageToChannel } = require('../slack');
 const techMentors = require('../tech-mentors');
-const { getNewStudentsFromSFDC, hasIntakeFormCompleted } = require('./getNewStudentsFromSFDC');
+const { getNewStudentsFromSFDC, hasIntakeFormCompleted } = require('../salesforce');
 const { exitIfCohortIsNotActive, currentCohortWeek } = require('./runOnlyDuringActiveCohort');
 
 const {

@@ -1,6 +1,16 @@
 require('dotenv').config();
 const jsforce = require('jsforce');
-const { SFDC_OPPTY_RECORD_ID, SFDC_SELECT_QUERY } = require('../constants');
+const { loadGoogleSpreadsheet } = require('../googleSheets');
+const {
+  SFDC_OPPTY_RECORD_ID,
+  SFDC_SELECT_QUERY,
+  FULL_TIME_COURSE_START_DATE,
+  PART_TIME_COURSE_START_DATE,
+  SFDC_FULL_TIME_COURSE_TYPE,
+  SFDC_PART_TIME_COURSE_TYPE,
+  DOC_ID_HRPTIV,
+  SHEET_ID_HRPTIV_ROSTER,
+} = require('../constants');
 
 const conn = new jsforce.Connection({ loginUrl: process.env.SFDC_LOGIN_URL });
 // Salesforce API Integrations
@@ -18,10 +28,10 @@ const login = async () => {
   }
 };
 
-const generateWhereClause = (courseStart, courseType) => `RecordTypeId = '${SFDC_OPPTY_RECORD_ID}'
-AND Course_Product__c = 'Web Development'
+const generateWhereClause = (courseStart, courseType) => `Course_Product__c = 'Web Development'
 AND Course_Start_Date_Actual__c = ${courseStart}
-AND Course_Type__c LIKE '%${courseType}%'`;
+AND Course_Type__c LIKE '%${courseType}%'
+AND (StageName = 'Deposit Paid' OR StageName = 'Accepted'`/* OR StageName = 'Contract Out'*/ + `)`;
 
 const formatAddress = ({
   street,
@@ -113,7 +123,7 @@ const formatStudents = (students) => {
   return formattedStudents;
 };
 
-exports.getStudents = async (courseStart, courseType) => {
+const getStudents = async (courseStart, courseType) => {
   try {
     await login();
     return await conn.sobject('Opportunity')
@@ -130,7 +140,13 @@ exports.getStudents = async (courseStart, courseType) => {
   }
 };
 
-exports.getStudentsByReportID = async (reportID) => {
+const getAllStudents = async () => []
+  .concat(
+    await getStudents(FULL_TIME_COURSE_START_DATE, SFDC_FULL_TIME_COURSE_TYPE),
+    await getStudents(PART_TIME_COURSE_START_DATE, SFDC_PART_TIME_COURSE_TYPE),
+  );
+
+const getStudentsByReportID = async (reportID) => {
   try {
     await login();
     const report = conn.analytics.report(reportID);
@@ -144,4 +160,32 @@ exports.getStudentsByReportID = async (reportID) => {
   } catch (error) {
     return error;
   }
+};
+
+const hasIntakeFormCompleted = (student) => student.funFact
+  && student.selfReportedPrepartion && student.githubHandle;
+
+const getEnrolledStudentSFDCContactIDs = async (docID, sheetID) => {
+  const doc = await loadGoogleSpreadsheet(docID);
+  const sheet = doc.sheetsById[sheetID];
+  const rows = await sheet.getRows();
+  return rows.map((row) => row.sfdcContactId);
+};
+
+const getNewStudentsFromSFDC = async () => {
+  const students = await getAllStudents();
+  const enrolledStudentContactIDs = await getEnrolledStudentSFDCContactIDs(
+    DOC_ID_HRPTIV,
+    SHEET_ID_HRPTIV_ROSTER,
+  );
+  return students.filter((student) =>
+    !enrolledStudentContactIDs.includes(student.sfdcContactId));
+};
+
+module.exports = {
+  getStudents,
+  getAllStudents,
+  getStudentsByReportID,
+  hasIntakeFormCompleted,
+  getNewStudentsFromSFDC,
 };
