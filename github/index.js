@@ -100,12 +100,17 @@ exports.removeUserFromTeam = async (username, team) => {
 };
 
 // Batch add usernames to a GitHub team
-exports.addUsersToTeam = async (usernames, team) => {
+exports.addUsersToTeam = async (usernames, team, addAsMaintainer) => {
   try {
+    const payload = { method: 'PUT', headers };
+    if (addAsMaintainer) {
+      payload.body = JSON.stringify({ role: 'maintainer' });
+    }
+
     const promises = usernames.map(async (username) => {
       const addUser = await fetch(
         `${GITHUB_API_TEAMS}/${team}/memberships/${username}`,
-        { method: 'PUT', headers },
+        payload,
       );
       if (addUser.status !== 200) {
         throw new Error(`Error adding ${username}`);
