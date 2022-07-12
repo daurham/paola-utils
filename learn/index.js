@@ -115,7 +115,7 @@ exports.createNewCohort = async (options) => {
     );
     const json = await response.json();
     if (json.error || json.message) throw new Error(json.error || json.message);
-    return response.uid;
+    return json.uid;
   } catch (error) {
     return error.message;
   }
