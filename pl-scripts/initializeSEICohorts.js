@@ -1,187 +1,259 @@
+/* eslint-disable no-restricted-syntax, no-await-in-loop */
 require('dotenv').config();
 const Bottleneck = require('bottleneck');
-// const _ = require('underscore');
-// const GSheets = require('./googleSheets');
-// const GGroups = require('./googleGroups');
-// const GMail = require('./googleMail');
-// const Salesforce = require('./salesforce');
 const GitHub = require('../github');
 const Learn = require('../learn');
+const { loadGoogleSpreadsheet, getRows } = require('../googleSheets');
+const { DOC_ID_CESP, SHEET_ID_CESP_ROSTER } = require('../constants');
+
+const DO_IT_LIVE = false;
+
+const LEARN_COHORT_FT_START_DATE = '2022-07-18'; // direct from product cal
+const LEARN_COHORT_FT_END_DATE = '2022-10-24'; // start date of round after NEXT
+const LEARN_COHORT_PT_START_DATE = '2022-07-19'; // direct from product cal
+const LEARN_COHORT_PT_END_DATE = '2023-04-15'; // direct from product cal
+const LEARN_COHORT_PRECOURSE_START_DATE = '2022-07-18'; // direct from product cal
+const LEARN_COHORT_PRECOURSE_END_DATE = '2022-09-05'; // start date of next round
+
+const CONFIG = [{
+  teamName: 'Students: RFP2207',
+  learnCampusName: 'Remote Pacific',
+  learnCohortName: 'SEI-RFP2207',
+  learnCohortLabel: '22-07-SEI-RFP',
+  learnCohortStartDate: LEARN_COHORT_FT_START_DATE,
+  learnCohortEndDate: LEARN_COHORT_FT_END_DATE,
+  precourseCampusName: 'RFT Pacific',
+  staff: [{
+    firstName: 'Yu-Lin', lastName: 'Kong', email: 'yulin.kong@galvanize.com', github: 'yu-linkong1',
+  }, {
+    firstName: 'Annah', lastName: 'Patterson', email: 'annah.patterson@galvanize.com', github: 'annahinnyc',
+  }, {
+    firstName: 'Destiny', lastName: 'Walker', email: 'destiny.walker@galvanize.com', github: 'destinywalker1',
+  }, {
+    firstName: 'Eric', lastName: 'Do', email: 'eric.do@galvanize.com', github: 'eric-do',
+  }, {
+    firstName: 'Hilary', lastName: 'Upton', email: 'hilary.upton@galvanize.com', github: 'hilaryupton13',
+  }, {
+    firstName: 'Itzel', lastName: 'Cortes', email: 'itzel.cortes@galvanize.com',
+  }, {
+    firstName: 'Jess', lastName: 'Mason', email: 'jess.mason@galvanize.com', github: 'mason-jp',
+  }, {
+    firstName: 'Julian', lastName: 'Yuen', email: 'julian.yuen@galvanize.com', github: 'jyuen',
+  }, {
+    firstName: 'Katie', lastName: 'Papke', email: 'katie.papke@galvanize.com', github: 'Katie-Papke',
+  }, {
+    firstName: 'Mylani', lastName: 'Demas', email: 'mylani.demas@galvanize.com', github: 'mylanidemas1',
+  }, {
+    firstName: 'Natalie', lastName: 'Massarany', email: 'natalie.massarany@galvanize.com',
+  }],
+}, {
+  teamName: 'Students: RFE2207',
+  learnCampusName: 'Remote Eastern',
+  learnCohortName: 'SEI-RFE2207',
+  learnCohortLabel: '22-07-SEI-RFE',
+  learnCohortStartDate: LEARN_COHORT_FT_START_DATE,
+  learnCohortEndDate: LEARN_COHORT_FT_END_DATE,
+  precourseCampusName: 'RFT Eastern',
+  staff: [{
+    firstName: 'Zabrian', lastName: 'Oglesby', email: 'zabrian.oglesby@galvanize.com', github: 'ZabrianOglesby',
+  }, {
+    firstName: 'Jolisha', lastName: 'Young', email: 'jolisha.young@galvanize.com',
+  }, {
+    firstName: 'Jake', lastName: 'Ascher', email: 'jake.ascher@galvanize.com', github: 'ascherj',
+  }, {
+    firstName: 'Shelecia', lastName: 'McKinney', email: 'shelecia.mckinney@galvanize.com', github: 'SheleciaM',
+  }, {
+    firstName: 'Sunnie', lastName: 'Frazier', email: 'francine.frazier@galvanize.com',
+  }, {
+    firstName: 'Tanya', lastName: 'Farirayi', email: 'tanya.farirayi@galvanize.com',
+  }, {
+    firstName: 'Tosi', lastName: 'Awofeso', email: 'tosin.awofeso@galvanize.com',
+  }],
+}, {
+  teamName: 'Students: RFC2207',
+  learnCampusName: 'Remote Central',
+  learnCohortName: 'SEI-RFC2207',
+  learnCohortLabel: '22-07-SEI-RFC',
+  learnCohortStartDate: LEARN_COHORT_FT_START_DATE,
+  learnCohortEndDate: LEARN_COHORT_FT_END_DATE,
+  precourseCampusName: 'RFT Central',
+  staff: [{
+    firstName: 'Zabrian', lastName: 'Oglesby', email: 'zabrian.oglesby@galvanize.com', github: 'ZabrianOglesby',
+  }, {
+    firstName: 'Jolisha', lastName: 'Young', email: 'jolisha.young@galvanize.com',
+  }, {
+    firstName: 'Jake', lastName: 'Ascher', email: 'jake.ascher@galvanize.com', github: 'ascherj',
+  }, {
+    firstName: 'Shelecia', lastName: 'McKinney', email: 'shelecia.mckinney@galvanize.com', github: 'SheleciaM',
+  }, {
+    firstName: 'Sunnie', lastName: 'Frazier', email: 'francine.frazier@galvanize.com',
+  }, {
+    firstName: 'Tanya', lastName: 'Farirayi', email: 'tanya.farirayi@galvanize.com',
+  }, {
+    firstName: 'Tosi', lastName: 'Awofeso', email: 'tosin.awofeso@galvanize.com',
+  }],
+}, {
+  teamName: 'Students: RPP2207',
+  learnCampusName: 'Remote Part Time',
+  learnCohortName: 'SEI-RPP2207',
+  learnCohortLabel: '22-07-SEI-RPT',
+  learnCohortStartDate: LEARN_COHORT_PT_START_DATE,
+  learnCohortEndDate: LEARN_COHORT_PT_END_DATE,
+  learnCohortIsPartTime: true,
+  precourseCampusName: 'RPT Pacific',
+  staff: [{
+    firstName: 'Jeffrey', lastName: 'Cho', email: 'jeffrey.cho@galvanize.com',
+  }, {
+    firstName: 'Alex', lastName: 'Jacobs', email: 'alex.jacobs@galvanize.com', github: 'lexjacobs',
+  }, {
+    firstName: 'Bella', lastName: 'Tea', email: 'bella.tea@galvanize.com', github: 'isabellatea',
+  }, {
+    firstName: 'Courtney', lastName: 'Walker', email: 'courtney.walker@galvanize.com', github: 'Comafke09',
+  }, {
+    firstName: 'Leslie', lastName: 'Pajuelo', email: 'leslie.pajuelo@galvanize.com', github: 'LesliePajuelo',
+  }, {
+    firstName: 'Maysie', lastName: 'Ocera', email: 'maysie.ocera@galvanize.com', github: 'maysieo',
+  }, {
+    firstName: 'Michelle', lastName: 'Lockett', email: 'michelle.lockett@galvanize.com', github: 'michellelockett',
+  }, {
+    firstName: 'Stephanie', lastName: 'Reissner', email: 'stephanie.reissner@galvanize.com',
+  }],
+}, {
+  teamName: 'Students: SEIP2209',
+  learnCampusName: 'Precourse',
+  learnCohortName: 'SEI - Precourse - September 2022',
+  learnCohortLabel: null,
+  learnCohortStartDate: LEARN_COHORT_PRECOURSE_START_DATE,
+  learnCohortEndDate: LEARN_COHORT_PRECOURSE_END_DATE,
+  learnCohortIsPrep: true,
+  staff: [{
+    firstName: 'Peter', lastName: 'Muller', email: 'peter.muller@galvanize.com', github: 'peterianmuller',
+  }, {
+    firstName: 'Beverly', lastName: 'Hernandez', email: 'beverly.hernandez@galvanize.com', github: 'beverlyAH',
+  }, {
+    firstName: 'Daniel', lastName: 'Rouse', email: 'daniel.rouse@galvanize.com', github: 'danrouse',
+  }, {
+    firstName: 'David', lastName: 'Coleman', email: 'david.coleman@galvanize.com', github: 'colemandavid55',
+  }, {
+    firstName: 'Eliza', lastName: 'Drinker', email: 'eliza.drinker@galvanize.com', github: 'aesuan',
+  }, {
+    firstName: 'Steven', lastName: 'Chung', email: 'steven.chung@galvanize.com', github: 'stevenchung213',
+  }],
+}];
+
+// map of learnCohortName to UID
+// populated when cohorts are created
+// if doing a late-run, or student population, set these manually!
+// the UIDs of newly-created cohorts are logged at creation-time
+const cohortIds = {
+  'SEI-RFP2207': 'c7d5ccfdbfb4ffe7ca',
+  'SEI-RFC2207': '6ddd43fe810c6439be',
+  'SEI-RFE2207': 'e101fbcd54a669f9ab',
+  'SEI-RPP2207': '18509cdf743efabec7',
+  'SEI - Precourse - September 2022': '583bcb1d7c32f96979',
+};
+
+// END OF CONFIGURATION
 
 const learnRateLimiter = new Bottleneck({
   maxConcurrent: 2,
   minTime: 500,
 });
 const addStudentToCohortRL = learnRateLimiter.wrap(Learn.addStudentToCohort);
-// const Slack = require('./slack');
 
-/*
-- Create GitHub teams for Immersive Cohorts and for Next Precourse
-- Add instructors to new GitHub teams
-- Create Learn cohorts for Immersive Cohorts and for Next Precourse
-- Add instructors to new Learn cohorts
-- Get students who have completed Precourse
-- Add students to GitHub teams and Learn cohorts
-
-
-Remaining TODOs:
-  - Confirm github team names
-  - Confirm learn cohort names
-
-2204: W1 / W7 (4/11/2022 - 7/8/2022)
-  '22-04-SEI-RFC', '2022-04-11', '2022-07-18'
-    start date is same, end date is the start date of the NEXT cohort
-  'SEI - HR-RPP36 - February 2022', '22-02-SEI-RPT', '2022-02-21', '2022-11-12'
-    dates are AS LISTED
-  'SEI - Precourse - April 2022', null, '2022-02-22', '2022-04-11'
-*/
-
-// initializeSEICohort(null, null, 'Precourse', 'SEI - Precourse - April 2022', null, '2022-02-22', '2022-04-11');
-// initializeSEICohort(null, null, 'Remote Central', 'SEI-RFC2204', '22-04-SEI-RFC', '2022-04-11', '2022-07-18');
-// initializeSEICohort(null, null, 'Remote Pacific', 'SEI-RFP2204', '22-04-SEI-RFP', '2022-04-11', '2022-07-18');
-// initializeSEICohort(null, null, 'Remote Eastern', 'SEI-RFE2204', '22-04-SEI-RFE', '2022-04-11', '2022-07-18');
-// initializeSEICohort(null, null, 'Remote Part Time', 'SEI - HR-RPP36 - February 2022', '22-02-SEI-RPT', '2022-02-21', '2022-11-12');
-
-const LEARN_COHORT_FT_START_DATE = '2022-05-31';
-const LEARN_COHORT_FT_END_DATE = '2022-09-05';
-const LEARN_COHORT_PT_START_DATE = '2022-06-01';
-const LEARN_COHORT_PT_END_DATE = '2023-02-25';
-const LEARN_COHORT_PRECOURSE_START_DATE = '2022-05-31';
-const LEARN_COHORT_PRECOURSE_END_DATE = '2022-07-18';
-
-const CONFIG = [{
-  // RFP
-  teamName: 'Students: RFP2205',
-  learnCampusName: 'Remote Pacific',
-  learnCohortName: 'SEI-RFP2205',
-  learnCohortLabel: '22-05-SEI-RFP',
-  learnCohortStartDate: LEARN_COHORT_FT_START_DATE,
-  learnCohortEndDate: LEARN_COHORT_FT_END_DATE,
-  precourseCampusName: 'RFT Pacific',
-  learnCohortId: '3342',
-  staffGitHubHandles: [
-    'annahinnyc',
-    'destinywalker1',
-    'eric-do',
-    'hilaryupton13',
-    'mason-jp',
-    'jyuen',
-    'Katie-Papke',
-    'mylanidemas1',
-    'yu-linkong1',
-  ],
-}, {
-  teamName: 'Students: RFE2205',
-  learnCampusName: 'Remote Eastern',
-  learnCohortName: 'SEI-RFE2205',
-  learnCohortLabel: '22-05-SEI-RFE',
-  learnCohortStartDate: LEARN_COHORT_FT_START_DATE,
-  learnCohortEndDate: LEARN_COHORT_FT_END_DATE,
-  precourseCampusName: 'RFT Eastern',
-  learnCohortId: '3341',
-  staffGitHubHandles: [
-    'DaltonHart',
-    'ascherj',
-    'MFiorillo',
-    'SheleciaM',
-    'ZabrianOglesby',
-  ],
-}, {
-  teamName: 'Students: RFC2205',
-  learnCampusName: 'Remote Central',
-  learnCohortName: 'SEI-RFC2205',
-  learnCohortLabel: '22-05-SEI-RFC',
-  learnCohortStartDate: LEARN_COHORT_FT_START_DATE,
-  learnCohortEndDate: LEARN_COHORT_FT_END_DATE,
-  precourseCampusName: 'RFT Central',
-  learnCohortId: '3339',
-  staffGitHubHandles: [
-    'DaltonHart',
-    'ascherj',
-    'MFiorillo',
-    'SheleciaM',
-    'ZabrianOglesby',
-  ],
-}, {
-  teamName: 'Students: RPP2205',
-  learnCampusName: 'Remote Part Time',
-  learnCohortName: 'SEI-RPP2205',
-  learnCohortLabel: '22-05-SEI-RPT',
-  learnCohortStartDate: LEARN_COHORT_PT_START_DATE,
-  learnCohortEndDate: LEARN_COHORT_PT_END_DATE,
-  learnCohortIsPartTime: true,
-  precourseCampusName: 'RPT Pacific',
-  learnCohortId: '3343',
-  staffGitHubHandles: [
-    'lexjacobs',
-    'isabellatea',
-    'Comafke09',
-    'LesliePajuelo',
-    'maysieo',
-    'michellelockett',
-  ],
-}, {
-  teamName: 'Students: SEIP2207',
-  learnCampusName: 'Precourse',
-  learnCohortName: 'SEI - Precourse - July 2022',
-  learnCohortLabel: null,
-  learnCohortStartDate: LEARN_COHORT_PRECOURSE_START_DATE,
-  learnCohortEndDate: LEARN_COHORT_PRECOURSE_END_DATE,
-  learnCohortIsPrep: true,
-  learnCohortId: '3340',
-  staffGitHubHandles: [
-    'danrouse',
-    'colemandavid55',
-    'aesuan',
-    'peterianmuller',
-    'stevenchung213',
-    'beverlyAH',
-    'N8RB8',
-  ],
-}];
-
-//     'RFT Central' : 'Students-RFC2204',
-//     'RFT Pacific': 'Students-RFP2204',
-//     // 'RPT Pacific': 'Students-HR-RPP36',
-//     'RFT Eastern': 'Students-RFE2204',
 const formatGitHubTeamNameAsSlug = (teamName) => teamName.replace(/:/g, '').replace(/\s+/g, '-');
 
 const createGitHubTeams = () => Promise.all(
-  CONFIG.map((config) => GitHub.createTeam(config.teamName)),
+  CONFIG.map((config) => {
+    console.log('Create GitHub team', config.teamName);
+    if (DO_IT_LIVE) {
+      return GitHub.createTeam(config.teamName);
+    }
+  }),
 );
 
-const addInstructorsToGitHubTeams = async () => {
-  // add to team but we need PUT body {"role": "maintainer"} and maybe a Content-Type: application/json header
-};
+const addInstructorsToGitHubTeams = () => Promise.all(
+  CONFIG.map((config) => {
+    const usernames = config.staff.filter((s) => s.github).map((s) => s.github);
+    console.log(`Adding staff to GitHub Team ${formatGitHubTeamNameAsSlug(config.teamName)}: ${usernames}...`);
+    if (DO_IT_LIVE) {
+      return GitHub.addUsersToTeam(usernames, formatGitHubTeamNameAsSlug(config.teamName), true);
+    }
+  }),
+);
 
 const createLearnCohorts = () => Promise.all(
-  CONFIG.map((config) => Learn.createNewCohort({
-    name: config.learnCohortName,
-    product_type: 'SEI',
-    label: config.learnCohortLabel,
-    campus_name: config.learnCampusName,
-    starts_on: config.learnCohortStartDate,
-    ends_on: config.learnCohortEndDate,
-    program: 'Consumer',
-    subject: 'Software Engineering',
-    cohort_format: config.learnCohortIsPartTime ? 'Part Time' : 'Full Time',
-    category: config.learnCohortIsPrep ? 'Prep' : 'Immersive',
-  })),
+  CONFIG.map(async (config) => {
+    const cohort = {
+      name: config.learnCohortName,
+      product_type: 'SEI',
+      label: config.learnCohortLabel,
+      campus_name: config.learnCampusName,
+      starts_on: config.learnCohortStartDate,
+      ends_on: config.learnCohortEndDate,
+      program: 'Consumer',
+      subject: 'Software Engineering',
+      cohort_format: config.learnCohortIsPartTime ? 'Part Time' : 'Full Time',
+      category: config.learnCohortIsPrep ? 'Prep' : 'Immersive',
+    };
+    console.log('Create Learn cohort', cohort);
+    if (DO_IT_LIVE) {
+      const cohortId = await Learn.createNewCohort(cohort);
+      cohortIds[config.learnCohortName] = cohortId;
+      console.log(`Created Learn cohort ${config.learnCohortName} with UID ${cohortId}`);
+    }
+  }),
 );
 
-const addInstructorsToLearnCohorts = async () => {};
+const addInstructorsToLearnCohorts = () => Promise.all(
+  CONFIG.map(async (config) => {
+    const learnCohortId = cohortIds[config.learnCohortName];
+    if (!learnCohortId) {
+      console.info(`No cohort ID found for cohort "${config.learnCohortName}", skipping...`);
+      return;
+    }
+    for (const { firstName, lastName, email } of config.staff) {
+      const staff = {
+        first_name: firstName,
+        last_name: lastName,
+        email,
+        instructor: true,
+      };
+      console.log('Create staff', config.learnCohortName, learnCohortId, staff);
+      if (DO_IT_LIVE) {
+        await addStudentToCohortRL(learnCohortId, staff);
+      }
+    }
+  }),
+);
 
-const getStudentsToOnboard = async () => {};
+const getStudentsToOnboard = async () => {
+  const cespSheet = await loadGoogleSpreadsheet(DOC_ID_CESP);
+  const students = await getRows(cespSheet.sheetsById[SHEET_ID_CESP_ROSTER]);
+  const eligibleStudents = students.filter((student) => student['Precourse Complete'] === 'Yes');
+  console.log('eligible students', eligibleStudents.length, 'of', students.length);
+  return eligibleStudents.map((student) => ({
+    fullName: student['Full Name'],
+    campus: student['Campus'],
+    githubHandle: student['GitHub'],
+    email: student['SFDC Email'],
+  }));
+};
 
 const addStudentsToGitHubTeams = async (students) => {
   const cohortConfigs = CONFIG.filter((config) => !config.learnCohortIsPrep);
   for (const config of cohortConfigs) {
     const campusStudents = students.filter((student) => config.precourseCampusName === student.campus);
-    if (!campusStudents.length) return null;
+    if (!campusStudents.length) {
+      console.log(`Cannot find matching CES&P campus for config campus named "${config.precourseCampusName}", skipping!`);
+      return null;
+    }
     const campusName = formatGitHubTeamNameAsSlug(config.teamName);
     console.log('Add', campusStudents.length, 'students to team', campusName);
     console.log(campusStudents.map((student) => student.githubHandle));
-    await GitHub.addUsersToTeam(campusStudents.map((student) => student.githubHandle), campusName);
+    if (DO_IT_LIVE) {
+      await GitHub.addUsersToTeam(campusStudents.map((student) => student.githubHandle), campusName);
+    }
   }
 };
 
@@ -189,211 +261,60 @@ const addStudentsToLearnCohorts = async (students) => {
   const studentsWithValidCampus = students.filter((student) => CONFIG.find((config) => config.precourseCampusName === student.campus));
   for (const student of studentsWithValidCampus) {
     const campusConfig = CONFIG.find((config) => config.precourseCampusName === student.campus);
+    if (!campusConfig) {
+      console.log(`Cannot find matching config campus for student "${student.fullName}" with CES&P campus "${student.campus}", skipping!`);
+      return null;
+    }
+    const learnCohortId = cohortIds[campusConfig.learnCohortName];
     const splitName = student.fullName.split(' ');
     const learnStudent = {
       first_name: splitName[0],
       last_name: splitName[splitName.length - 1],
       email: student.email,
     };
-    console.log('Add student from Precourse', student.campus, 'to', campusConfig.learnCampusName, campusConfig.learnCohortId, JSON.stringify(learnStudent));
-    await addStudentToCohortRL(campusConfig.learnCohortId, learnStudent);
+    console.log('Add student from Precourse', student.campus, 'to', campusConfig.learnCampusName, learnCohortId, JSON.stringify(learnStudent));
+    if (DO_IT_LIVE) {
+      await addStudentToCohortRL(learnCohortId, learnStudent);
+    }
   }
 };
 
+const initializeNewCohorts = async () => {
+  console.log('Creating GitHub teams...');
+  const gitHubTeamResult = await createGitHubTeams();
+  console.log(gitHubTeamResult);
 
-// array of objects with keys: fullName, campus, githubHandle, deadlineGroup, dateAdded, email
-const students = [];
+  console.log('Creating Learn cohorts...');
+  const learnCohortResult = await createLearnCohorts();
+  console.log(learnCohortResult);
+};
+
+const populateNewCohortsWithStaff = async () => {
+  console.log('Adding instructors to GitHub teams...');
+  const addInstructorsToGitHubResult = await addInstructorsToGitHubTeams();
+  console.log(addInstructorsToGitHubResult);
+
+  console.log('Adding instructors to Learn cohorts...');
+  const addInstructorsToLearnResult = await addInstructorsToLearnCohorts();
+  console.log(addInstructorsToLearnResult);
+};
+
+const populateNewCohortsWithStudents = async () => {
+  console.log('Getting students from roster...');
+  const students = await getStudentsToOnboard();
+  console.log(`Got ${students.length} students!`);
+
+  console.log('Adding students to GitHub teams...');
+  const addStudentsToGitHubResult = await addStudentsToGitHubTeams(students);
+  console.log(addStudentsToGitHubResult);
+
+  console.log('Adding students to Learn cohorts...');
+  const addStudentsToLearnResult = await addStudentsToLearnCohorts(students);
+  console.log(addStudentsToLearnResult);
+};
 
 (async () => {
-  // console.log('Creating GitHub teams...');
-  // const gitHubTeamResult = await createGitHubTeams();
-  // console.log(gitHubTeamResult);
-
-  // TODO: Add instructors to new GitHub teams
-
-  // console.log('Creating Learn cohorts...');
-  // const learnCohortResult = await createLearnCohorts();
-  // console.log(learnCohortResult);
-
-  // TODO: Add instructors to new Learn cohorts
-
-  // TODO: Get students who have completed Precourse
-  // console.log('Adding students to GitHub teams...');
-  // console.log(await addStudentsToGitHubTeams(students));
-  console.log('Adding students to Learn cohorts...');
-  await addStudentsToLearnCohorts(students);
+  // await initializeNewCohorts();
+  // await populateNewCohortsWithStaff();
+  await populateNewCohortsWithStudents();
 })();
-
-/*
-const Bottleneck = require('bottleneck');
-const _ = require('underscore');
-const GSheets = require('./googleSheets');
-const GGroups = require('./googleGroups');
-const GMail = require('./googleMail');
-const Salesforce = require('./salesforce');
-const GitHub = require('./github');
-const Learn = require('./learn');
-const Slack = require('./slack');
-
-const initializeSEICohort = async (
-  githubTeamName,
-  githubHandles,
-  learnCampusName,
-  learnCohortName,
-  learnCohortLabel,
-  learnCohortStartDate,
-  learnCohortEndDate,
-  learnInstructors,
-  learnStudents
-) => {
-  const GITHUB_API_USERS = 'https://api.github.com/users';
-  const GITHUB_API_TEAMS = 'https://api.github.com/orgs/hackreactor/teams';
-  const GITHUB_API_REPOS = 'https://api.github.com/repos/hackreactor';
-
-  // // Create GitHub Team
-  // // TODO: Write GitHub.createTeam method
-//   const a = await GitHub.createTeam('Students: RFP2204');
-//   const b = await GitHub.createTeam('Students: RFC2204');
-//   const c = await GitHub.createTeam('Students: RFE2204');
-//  const d = await GitHub.createTeam('Students: HR-RPP36');
-// await confirmation from magee
-//   const e = await GitHub.createTeam('Students: SEIP2205');
-
-
-//   console.log(a);
-//   console.log(b);
-//   console.log(c);
-// console.log(d);
-//   console.log(e);
-
-
-  // // Add Instructors to GitHub Team
-  // // TODO: Write GitHub.addMaintainersToTeam
-  // GitHub.addUsersToTeam(gitHandles, GITHUB_TEAM);   TODO
-  //
-  //
-  // Add Students to GitHub Team
-//   const x = await GitHub.batchAddUserstoTeam(githubHandles, githubTeamName);
-//   GitHub.batchAddUserstoTeam(gitHandles, GITHUB_TEAM);
-//   console.log(x);
-
-//   Create Learn Cohort
-  const newLearnCohortStatus = await Learn.createNewCohort({
-    name: learnCohortName,
-    product_type: 'SEI',
-    label: learnCohortLabel,
-    campus_name: learnCampusName,
-    starts_on: learnCohortStartDate,
-    ends_on: learnCohortEndDate,
-    program: 'Consumer',
-    subject: 'Software Engineering',
-    cohort_format: 'Full Time',
-    category: 'Prep',
-    // category: 'Immersive',
-  });
-  console.log(newLearnCohortStatus);
-
-  // // Add Instructors to Learn Cohort
-  // // TODO: Write Learn.batchAddInstructorsToCohort method
-  // const batchAddInstructorsToCohort = async (cohortId, instructors) => {
-  //   // Create Rate Limiter
-  //   const limiter = new Bottleneck({
-  //     maxConcurrent: 1,
-  //     minTime: 333,
-  //   });
-  //
-  //   // Apply Rate Limit to addInstructorToCohort method
-  //   const limitedAddInstructorToCohort = limiter.wrap(Learn.addInstructorToCohort);
-  //
-  //   try {
-  //     const promises = instructors.map(async (instructor) => {
-  //       const addInstructorStatus = await limitedAddInstructorToCohort(cohortId, instructor);
-  //       // if (addInstructorStatus !== 201) {
-  //       //   throw new Error(`Error adding ${instructor.firstName} ${instructor.lastName}`);
-  //       // }
-  //       return addInstructorStatus;
-  //     });
-  //     const result = await Promise.all(promises);
-  //     return result.every((status) => status === 201);
-  //   } catch (error) {
-  //     return error.message;
-  //   }
-  // };
-  //
-  // const batchAddedInstructors = await batchAddInstructorsToCohort();
-  // console.log(batchAddedInstructors);
-
-  //   // Add Students to Learn Cohort
-  //   // TODO: Write Learn.batchAddStudentsToCohort method
-  // const batchAddStudentsToCohort = async (cohortId, students) => {
-  //   let studentStatus;
-  //   students.forEach(async (student) => {
-  //     studentStatus = await Learn.addStudentToCohort(cohortId, student);
-  //     console.log(studentStatus);
-  //   });
-  // };
-
-  // Log results with copy/paste table/JSON of links and info
-
-  return 'Done!';
-};
-
-
-// initializeSEICohort(null, null, 'Precourse', 'SEI - Precourse - April 2022', null, '2022-02-22', '2022-04-11');
-
-
-
-// first create github teams with this call:
-// initializeSEICohort();
-
-
-// list of current GitHub class prefixes:
-// const a = await GitHub.createTeam('Students: HR-LAX49');
-// const b = await GitHub.createTeam('Students: HR-RFP58');
-// const c = await GitHub.createTeam('Students: HR-RPP35');
-// const d = await GitHub.createTeam('Students: HR-RFE8');
-// const e = await GitHub.createTeam('Students: HR-DEN17');
-// const f = await GitHub.createTeam('Students: SEIP2202');
-
-
-// then create Learn teams with this call ->
-// initializeSEICohort(null, null, 'Remote Central', 'SEI-RFC2204', '22-04-SEI-RFC', '2022-04-11', '2022-07-18');
-// initializeSEICohort(null, null, 'Remote Pacific', 'SEI-RFP2204', '22-04-SEI-RFP', '2022-04-11', '2022-07-18');
-// initializeSEICohort(null, null, 'Remote Eastern', 'SEI-RFE2204', '22-04-SEI-RFE', '2022-04-11', '2022-07-18');
-// initializeSEICohort(null, null, 'Remote Part Time', 'SEI - HR-RPP36 - February 2022', '22-02-SEI-RPT', '2022-02-21', '2022-11-12');
-
-
-
-
-
-// create Precourse Learn cohort
-// initializeSEICohort(null, null, 'Precourse', 'SEI - Precourse - May 2022', null, '2022-04-11', '2022-05-30');
-
-
-
-// initializeSEICohort(null, null, 'San Jose', 'SEI - HR-SJO7 - September 2021', '21-09-SEI-SJO', '2021-09-20', '2021-12-23');
-// initializeSEICohort(null, null, 'Seattle', 'SEI - HR-SEA19 - September 2021', '21-09-SEI-SEA', '2021-09-20', '2021-12-23');
-
-  const campusNameToGitHubTeam = {
-    'RFT Central' : 'Students-RFC2204',
-    'RFT Pacific': 'Students-RFP2204',
-    // 'RPT Pacific': 'Students-HR-RPP36',
-    'RFT Eastern': 'Students-RFE2204',
-  };
-
-  const campuses = Object.keys(campusNameToGitHubTeam);
-  const gitHubPromises = campuses.map((campus) => {
-    if (!studentsByCampus[campus]) return;
-    const gitHandles = studentsByCampus[campus].map((student) => student.githubHandle);
-    const gitHubTeam = campusNameToGitHubTeam[campus];
-    // console.log(gitHubTeam);
-    return GitHub.addUsersToTeam(gitHandles, gitHubTeam);
-  });
-
-  const gitHubResults = await Promise.all(gitHubPromises);
-  console.log(gitHubResults);
-  return gitHubResults;
-};
-
-addAllStudentsToLearn(students);
-*/
