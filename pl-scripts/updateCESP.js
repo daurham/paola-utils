@@ -85,25 +85,13 @@ const filterAndSortStudents = (students) => students
   .sort(sortStudentsByDateAdded)
   .sort(sortStudentsByCampus);
 
-(async () => {
-  console.info('Retrieving roster from Pulse...');
-  const pulseSheet = await loadGoogleSpreadsheet(DOC_ID_PULSE);
-  const studentsFromRepoCompletion = await Promise.all(
-    techMentors.map((techMentor) => getRows(
-      pulseSheet.sheetsById[techMentor.repoCompletionSheetID],
-    )),
-  );
-  const studentsFromSeparatedRepoCompletion = await getRows(pulseSheet.sheetsByTitle['Separated Repo Completion']);
-  const students = filterAndSortStudents(studentsFromRepoCompletion.flat())
-    .concat(filterAndSortStudents(studentsFromSeparatedRepoCompletion));
-  const separations = await getRows(pulseSheet.sheetsByTitle['Separation Tracker']);
-  const activeStudents = students.filter((student) => !separations.find(
-    (separatedStudent) => separatedStudent.fullName === student.fullName,
-  ));
-
-  const allStudents = await getRows(pulseSheet.sheetsByTitle['HRPTIV']);
-
-  const pacificStudents = activeStudents.filter(s => s.campus === 'RFT Pacific')
+// Pods are assigned to RFP students by:
+// - creating two equally sized pods
+// - one pod contains all non-California residents
+// - attempts to keep average diagnostic scores equal
+// This function mutates the student objects passed in! ⚠
+const assignPods = async (repoCompletionStudents, rosterStudents) => {
+  const pacificStudents = repoCompletionStudents.filter((s) => s.campus === 'RFT Pacific')
     .map((s) => {
       const scores = [
         s.m1DiagnosticTask1,
@@ -118,7 +106,7 @@ const filterAndSortStudents = (students) => students
         ? scores.reduce((acc, cur) => acc + Number(cur), 0) / scores.length
         : 0;
 
-      const rosterMatch = allStudents.find((rosterEntry) => rosterEntry.fullName.toLowerCase()
+      const rosterMatch = rosterStudents.find((rosterEntry) => rosterEntry.fullName.toLowerCase()
         === s.fullName.toLowerCase());
       const isCalifornia = !!(rosterMatch && (
         rosterMatch.addressWhileInSchool.match(/california/i)
@@ -138,46 +126,66 @@ const filterAndSortStudents = (students) => students
     return a.reduce((acc, cur) => acc + cur.diagnosticAverage, 0) / a.length;
   };
 
-  let bestNonCali;
-  let bestCali;
-  let bestDiff = 100;
-  const NUM_ITERATIONS = 100000;
-  for (let i = 0; i < NUM_ITERATIONS; i++) {
-    const nonCaliPod = pacificStudents.filter((s) => !s.isCalifornia);
-    const caliPod = pacificStudents.filter((s) => s.isCalifornia);
-    while (caliPod.length >= nonCaliPod.length + 1) {
-      const ix = Math.floor(Math.random() * caliPod.length);
-      const s = caliPod.splice(ix, 1)[0];
-      nonCaliPod.push(s);
-    }
-    const diff = Math.abs(getPodAverage(caliPod) - getPodAverage(nonCaliPod));
-    if (diff < bestDiff) {
-      bestDiff = diff;
-      bestNonCali = nonCaliPod;
-      bestCali = caliPod;
-    }
+  const nonCaliPod = pacificStudents.filter((s) => !s.isCalifornia);
+  const caliPod = pacificStudents.filter((s) => s.isCalifornia);
+  let largerPodName = 'Only CA';
+  let smallerPodName = 'Includes Outside CA';
+  let largerPod = caliPod;
+  let smallerPod = nonCaliPod;
+  if (nonCaliPod.length > caliPod.length) {
+    largerPodName = 'Includes Outside CA';
+    smallerPodName = 'Only CA';
+    largerPod = nonCaliPod;
+    smallerPod = caliPod;
   }
-
-  console.log('Created 2 pods with an average diagnostic score difference of', bestDiff);
-  console.log('pod 1', bestCali.length);
-  console.log('pod 2', bestNonCali.length);
-
-  console.log(bestNonCali);
-
-  for (let s of students) {
-    if (bestCali.find((ts) => ts.githubHandle.toLowerCase() === s.githubHandle.toLowerCase())) {
-      console.log('cali match', s.fullName);
-      s['RFP Pod'] = 'Only CA';
-    } else if (bestNonCali.find((ts) => ts.githubHandle.toLowerCase() === s.githubHandle.toLowerCase())) {
-      console.log('non-cali match', s.fullName);
-      s['RFP Pod'] = 'Includes Outside CA';
-    } else {
-      if (s.campus.includes('RFT Pacific')) {
-        console.log('no match', s.fullName, `"${s.githubHandle}"`);
+  while (largerPod.length > smallerPod.length) {
+    const largerPodAverage = getPodAverage(largerPod);
+    const smallerPodAverage = getPodAverage(smallerPod);
+    for (let i = 0; i < largerPod.length; i++) {
+      if (largerPod[i].hasDiagnostics) {
+        if (
+          (largerPodAverage > smallerPodAverage && largerPod[i].diagnosticAverage > smallerPodAverage) ||
+          (largerPodAverage < smallerPodAverage && largerPod[i].diagnosticAverage < largerPodAverage)
+        ) {
+          const student = largerPod.splice(i, 1)[0];
+          smallerPod.push(student);
+          break;
+        }
       }
-      s['RFP Pod'] = '';
     }
   }
+  console.log(
+    'Created two pods with an average diagnostic score difference of',
+    Math.abs(getPodAverage(caliPod) - getPodAverage(nonCaliPod)),
+  );
+  repoCompletionStudents.forEach((student) => {
+    if (largerPod.find((ts) => ts.githubHandle.toLowerCase() === student.githubHandle.toLowerCase())) {
+      student['RFP Pod'] = largerPodName;
+    } else if (smallerPod.find((ts) => ts.githubHandle.toLowerCase() === student.githubHandle.toLowerCase())) {
+      student['RFP Pod'] = smallerPodName;
+    } else {
+      student['RFP Pod'] = '';
+    }
+  });
+};
+
+(async () => {
+  console.info('Retrieving roster from Pulse...');
+  const pulseSheet = await loadGoogleSpreadsheet(DOC_ID_PULSE);
+  const studentsFromRepoCompletion = await Promise.all(
+    techMentors.map((techMentor) => getRows(
+      pulseSheet.sheetsById[techMentor.repoCompletionSheetID],
+    )),
+  );
+  const studentsFromSeparatedRepoCompletion = await getRows(pulseSheet.sheetsByTitle['Separated Repo Completion']);
+  const students = filterAndSortStudents(studentsFromRepoCompletion.flat())
+    .concat(filterAndSortStudents(studentsFromSeparatedRepoCompletion));
+  const separations = await getRows(pulseSheet.sheetsByTitle['Separation Tracker']);
+  const repoCompletionStudentsNotSeparated = students.filter((student) => !separations.find(
+    (separatedStudent) => separatedStudent.fullName === student.fullName,
+  ));
+  const rosterStudents = await getRows(pulseSheet.sheetsByTitle['HRPTIV']);
+  assignPods(repoCompletionStudentsNotSeparated, rosterStudents);
 
   const roster = formatStudentsForCESPRosterSheet(students, separations);
   const moduleCompletion = formatStudentsForCESPModuleCompletionSheet(activeStudents);
@@ -190,12 +198,12 @@ const filterAndSortStudents = (students) => students
   console.info('Updating roster worksheet...');
   await replaceWorksheet(doc.sheetsById[SHEET_ID_CESP_ROSTER], CESP_ROSTER_SHEET_HEADERS, roster);
 
-  // console.info('Updating module completion worksheet...');
-  // await replaceWorksheet(
-  //   doc.sheetsById[SHEET_ID_CESP_MODULE_COMPLETION],
-  //   CESP_MODULE_COMPLETION_SHEET_HEADERS,
-  //   moduleCompletion,
-  // );
+  console.info('Updating module completion worksheet...');
+  await replaceWorksheet(
+    doc.sheetsById[SHEET_ID_CESP_MODULE_COMPLETION],
+    CESP_MODULE_COMPLETION_SHEET_HEADERS,
+    moduleCompletion,
+  );
 
   console.info('Done!');
 })();
