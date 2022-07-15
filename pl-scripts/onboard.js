@@ -121,6 +121,7 @@ const isPartTime = (student) => !isFullTime(student);
 const formatStudentForRepoCompletion = (student, techMentor, rowIndex) => ({
   fullName: student.fullName,
   preferredName: student.preferredFirstName,
+  pronouns: student.pronouns,
   campus: student.campus,
   githubHandle: student.githubHandle,
   deadlineGroup: currentDeadlineGroup,
