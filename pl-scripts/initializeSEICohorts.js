@@ -6,6 +6,14 @@ const Learn = require('../learn');
 const { loadGoogleSpreadsheet, getRows } = require('../googleSheets');
 const { DOC_ID_CESP, SHEET_ID_CESP_ROSTER } = require('../constants');
 
+/*
+  TODO:
+  - Add YAML config files to each cohort definition
+  - Add Learn API support to POST /api/v1/cohorts/:cohort_id/resync with course_config_url body parameter 
+    see https://learn-2.galvanize.com/api/docs#cohorts-resyncing-curriculum
+  - Add and resync configs for each cohort upon creation
+*/
+
 const DO_IT_LIVE = false;
 
 const LEARN_COHORT_FT_START_DATE = '2022-07-18'; // direct from product cal
@@ -230,7 +238,7 @@ const addInstructorsToLearnCohorts = () => Promise.all(
 const getStudentsToOnboard = async () => {
   const cespSheet = await loadGoogleSpreadsheet(DOC_ID_CESP);
   const students = await getRows(cespSheet.sheetsById[SHEET_ID_CESP_ROSTER]);
-  const eligibleStudents = students.filter((student) => student['Precourse Complete'] === 'Yes');
+  const eligibleStudents = students.filter((student) => student['Precourse Complete'] === 'Yes' && student.Status === 'Enrolled');
   console.log('eligible students', eligibleStudents.length, 'of', students.length);
   return eligibleStudents.map((student) => ({
     fullName: student['Full Name'],
@@ -313,8 +321,21 @@ const populateNewCohortsWithStudents = async () => {
   console.log(addStudentsToLearnResult);
 };
 
+const printURLs = () => {
+  console.log('*New cohorts have been created!* 🎉\n');
+  console.log(
+    CONFIG.map((config) => [
+      `*${config.learnCampusName} (${config.learnCohortName})*`,
+      `_GitHub_: https://github.com/orgs/hackreactor/teams/${formatGitHubTeamNameAsSlug(config.teamName)}/members`,
+      `_Learn_: https://learn-2.galvanize.com/cohorts/${cohortIds[config.learnCohortName]}/users`,
+      '',
+    ].join('\n')).join('\n'),
+  );
+};
+
 (async () => {
   // await initializeNewCohorts();
   // await populateNewCohortsWithStaff();
-  await populateNewCohortsWithStudents();
+  // await populateNewCohortsWithStudents();
+  printURLs();
 })();
