@@ -2,28 +2,28 @@ module.exports = {
   /**
    * The following constants MUST be updated each round
    */
-  COHORT_ID: 'seip2207',
-  PRECOURSE_COHORT_START_DATE: '2022-05-31',
-  FULL_TIME_COURSE_START_DATE: '2022-07-18',
-  PART_TIME_COURSE_START_DATE: '2022-07-19',
+  COHORT_ID: 'seip2209',
+  PRECOURSE_COHORT_START_DATE: '2022-07-18',
+  FULL_TIME_COURSE_START_DATE: '2022-09-05',
+  PART_TIME_COURSE_START_DATE: '2022-09-07',
   DEADLINE_DATES: {
-    W1: ['6/15/2022', '6/22/2022', '6/29/2022'],
-    W2: ['6/22/2022', '6/29/2022', '7/6/2022'],
-    W3: ['6/29/2022', '7/6/2022', '7/10/2022'],
-    W4: ['7/1/2022', '7/8/2022', '7/10/2022'],
-    Final: ['7/1/2022', '7/8/2022', '7/10/2022'],
+    W1: ['8/3/2022', '8/10/2022', '8/17/2022'],
+    W2: ['8/10/2022', '8/17/2022', '8/24/2022'],
+    W3: ['8/17/2022', '8/24/2022', '8/28/2022'],
+    W4: ['8/22/2022', '8/26/2022', '8/28/2022'],
+    Final: ['8/22/2022', '8/26/2022', '8/28/2022'],
   },
-  LEARN_COHORT_ID: '3340',
-  GITHUB_STUDENT_TEAM: 'students-seip2207',
-  DOC_ID_PULSE: '1Qc5xTEri5yp1borurZ42MKpd9DqYivI_CYCnUVc4PMM',
-  DOC_ID_CESP: '1E3iGYANlHd_QMoeIoUZGTs5dgd8uknNTpl2_mPRhuYU',
-  SHEET_ID_HRPTIV_ROSTER: '115211641', // gid for each round's roster worksheet
+  LEARN_COHORT_ID: '3410',
+  GITHUB_STUDENT_TEAM: 'students-seip2209',
+  DOC_ID_PULSE: '1liQKJNIlso7oNiLDiOEVgI2Ke-iIsIOWMruyTJrFJis',
+  DOC_ID_CESP: '1itgjkcZ2Ti_3W9NZbnwUvvwbLq2e35TY6FGG9O2Tefw',
+  SHEET_ID_HRPTIV_ROSTER: '768015569', // gid for each round's roster worksheet
   // Slack invite URL toggles between each of these each round, since there are
   // two workspaces that we alternate between
   // Workspace 1 (2207)
-  SLACK_JOIN_URL_STUB: 'join.slack.com/t/hrseip/shared_invite/zt-u5go0u3k-9H_2XJZLp8JwSfvyhMNeRQ',
-  // Workspace 2 (2205)
-  // SLACK_JOIN_URL_STUB: 'join.slack.com/t/sei-opr/shared_invite/zt-1713wh5hc-vYsb9ut7gKri6CcGGJS~nQ',
+  // SLACK_JOIN_URL_STUB: 'join.slack.com/t/hrseip/shared_invite/zt-u5go0u3k-9H_2XJZLp8JwSfvyhMNeRQ',
+  // Workspace 2 (2209)
+  SLACK_JOIN_URL_STUB: 'join.slack.com/t/sei-opr/shared_invite/zt-1713wh5hc-vYsb9ut7gKri6CcGGJS~nQ',
 
   // Update these as changes are made to the assignment test suites (for repo completion formulas)
   TEST_COUNT_KOANS: 26,
@@ -61,8 +61,8 @@ module.exports = {
     'eliza.drinker@galvanize.com',
     'steven.chung@galvanize.com',
     'david.coleman@galvanize.com',
-    'nate.schroeder@galvanize.com',
     'raymond.yee@galvanize.com',
+    'jake.daurham@galvanize.com',
     // Peter Muller isn't here since his Slack token creates the channels
   ],
 

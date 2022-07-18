@@ -36,7 +36,7 @@ const {
 
 exitIfCohortIsNotActive();
 
-const MAX_STUDENTS_PER_RUN = 30;
+const MAX_STUDENTS_PER_RUN = 1;
 const PRODUCT_CODE_CAMPUS_OVERRIDES = {
   RFP: 'RFT Pacific',
   RFE: 'RFT Eastern',
@@ -121,6 +121,7 @@ const isPartTime = (student) => !isFullTime(student);
 const formatStudentForRepoCompletion = (student, techMentor, rowIndex) => ({
   fullName: student.fullName,
   preferredName: student.preferredFirstName,
+  pronouns: student.pronouns,
   campus: student.campus,
   githubHandle: student.githubHandle,
   deadlineGroup: currentDeadlineGroup,
