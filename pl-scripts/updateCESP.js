@@ -139,6 +139,7 @@ const assignPods = async (repoCompletionStudents, rosterStudents) => {
     smallerPod = caliPod;
   }
   while (largerPod.length > smallerPod.length) {
+    let hasStudentsToMove = false;
     const largerPodAverage = getPodAverage(largerPod);
     const smallerPodAverage = getPodAverage(smallerPod);
     for (let i = 0; i < largerPod.length; i++) {
@@ -149,9 +150,13 @@ const assignPods = async (repoCompletionStudents, rosterStudents) => {
         ) {
           const student = largerPod.splice(i, 1)[0];
           smallerPod.push(student);
+          hasStudentsToMove = true;
           break;
         }
       }
+    }
+    if (!hasStudentsToMove) {
+      break;
     }
   }
   console.log(
@@ -186,9 +191,8 @@ const assignPods = async (repoCompletionStudents, rosterStudents) => {
   ));
   const rosterStudents = await getRows(pulseSheet.sheetsByTitle['HRPTIV']);
   assignPods(repoCompletionStudentsNotSeparated, rosterStudents);
-
   const roster = formatStudentsForCESPRosterSheet(students, separations);
-  const moduleCompletion = formatStudentsForCESPModuleCompletionSheet(activeStudents);
+  const moduleCompletion = formatStudentsForCESPModuleCompletionSheet(repoCompletionStudentsNotSeparated);
 
   console.info(`Adding ${students.length} students to CES&P roster.`);
 
